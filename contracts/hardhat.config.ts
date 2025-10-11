@@ -55,6 +55,35 @@ const config: HardhatUserConfig = {
       accounts: [configVariable("OPTIMISM_PRIVATE_KEY")],
     },
   },
+  verify: {
+    etherscan: {
+      apiKey: configVariable("OPTIMISM_ETHERSCAN_API_KEY"),
+    },
+  },
+  chainDescriptors: {
+    // Optimism Sepolia (Testnet)
+    11155420: {
+      name: "Optimism Sepolia",
+      blockExplorers: {
+        etherscan: {
+          name: "Optimism Sepolia Etherscan",
+          url: "https://sepolia-optimism.etherscan.io",
+          apiUrl: "https://api-sepolia-optimistic.etherscan.io/api",
+        },
+      },
+    },
+    // Optimism Mainnet
+    10: {
+      name: "Optimism",
+      blockExplorers: {
+        etherscan: {
+          name: "Optimism Etherscan",
+          url: "https://optimistic.etherscan.io",
+          apiUrl: "https://api-optimistic.etherscan.io/api",
+        },
+      },
+    },
+  },
 };
 
 export default config;
