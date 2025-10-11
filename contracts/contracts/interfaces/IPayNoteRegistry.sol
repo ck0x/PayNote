@@ -40,6 +40,7 @@ interface IPayNoteRegistry {
 
     /**
      * @dev Structure representing a PayNote
+     * @notice The transaction hash is not stored on-chain but can be obtained from the PaymentSent event
      */
     struct PayNote {
         address sender;
@@ -47,7 +48,6 @@ interface IPayNoteRegistry {
         uint256 amount;
         string payReference;
         uint256 timestamp;
-        bytes32 txHash;
     }
 
     /**

@@ -92,8 +92,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
             recipient: recipient,
             amount: paymentAmount,
             payReference: payReference,
-            timestamp: block.timestamp,
-            txHash: bytes32(uint256(uint160(address(this)))) // Placeholder, will be the actual tx hash from events
+            timestamp: block.timestamp
         });
         
         // Track PayNotes by sender and recipient

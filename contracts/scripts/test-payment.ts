@@ -97,15 +97,16 @@ async function main() {
 
     console.log("\n📋 PayNote Created:");
     console.log("   PayNote ID:", payNoteId);
+    console.log("   Transaction Hash:", hash);
 
-    // Resolve the PayNote
+    // Resolve the PayNote (stored on-chain data)
     const payNote = await payNoteRegistry.read.resolvePayNote([payNoteId!]);
+    console.log("\n📝 On-Chain PayNote Data:");
     console.log("   Sender:", payNote.sender);
     console.log("   Recipient:", payNote.recipient);
     console.log("   Amount:", formatEther(payNote.amount), "ETH");
     console.log("   Reference:", payNote.payReference);
     console.log("   Timestamp:", new Date(Number(payNote.timestamp) * 1000).toISOString());
-    console.log("   TX Hash:", payNote.txHash);
 
     // Get updated total
     const newTotal = await payNoteRegistry.read.getTotalPayNotes();
