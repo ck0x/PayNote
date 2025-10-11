@@ -55,11 +55,11 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     function createPayNote(
         address recipient,
         uint256 amount,
-        string calldata reference
+        string calldata payReference
     ) external payable override nonReentrant returns (bytes32 payNoteId) {
         require(recipient != address(0), "Invalid recipient address");
-        require(bytes(reference).length > 0, "Reference cannot be empty");
-        require(bytes(reference).length <= 256, "Reference too long");
+        require(bytes(payReference).length > 0, "Reference cannot be empty");
+        require(bytes(payReference).length <= 256, "Reference too long");
         require(msg.value >= registrationFee, "Insufficient registration fee");
         
         // Generate unique PayNote ID
@@ -69,7 +69,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
                 msg.sender,
                 recipient,
                 amount,
-                reference,
+                payReference,
                 block.timestamp,
                 payNoteCounter
             )
@@ -83,7 +83,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
             sender: msg.sender,
             recipient: recipient,
             amount: amount,
-            reference: reference,
+            payReference: payReference,
             createdAt: block.timestamp,
             fulfilledAt: 0,
             txHash: bytes32(0),
@@ -99,7 +99,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
             msg.sender,
             recipient,
             amount,
-            reference,
+            payReference,
             block.timestamp
         );
         
@@ -141,7 +141,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     function getReference(
         bytes32 payNoteId
     ) external view override payNoteExistsModifier(payNoteId) returns (string memory) {
-        return payNotes[payNoteId].reference;
+        return payNotes[payNoteId].payReference;
     }
     
     /**
@@ -185,8 +185,8 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
         require(bytes(newReference).length > 0, "Reference cannot be empty");
         require(bytes(newReference).length <= 256, "Reference too long");
         
-        string memory oldReference = payNote.reference;
-        payNote.reference = newReference;
+        string memory oldReference = payNote.payReference;
+        payNote.payReference = newReference;
         
         emit PayNoteReferenceUpdated(payNoteId, oldReference, newReference);
     }

@@ -14,7 +14,7 @@ interface IPayNoteRegistry {
      * @param sender Address that created the PayNote
      * @param recipient Address that will receive the payment
      * @param amount Amount associated with the PayNote
-     * @param reference Human-readable reference for the payment
+     * @param payReference Human-readable reference for the payment
      * @param timestamp When the PayNote was created
      */
     event PayNoteCreated(
@@ -22,7 +22,7 @@ interface IPayNoteRegistry {
         address indexed sender,
         address indexed recipient,
         uint256 amount,
-        string reference,
+        string payReference,
         uint256 timestamp
     );
 
@@ -57,7 +57,7 @@ interface IPayNoteRegistry {
         address sender;
         address recipient;
         uint256 amount;
-        string reference;
+        string payReference;
         uint256 createdAt;
         uint256 fulfilledAt;
         bytes32 txHash;
@@ -68,14 +68,14 @@ interface IPayNoteRegistry {
      * @dev Creates a new PayNote with a reference
      * @param recipient Address that will receive the payment
      * @param amount Amount to be paid
-     * @param reference Human-readable reference for the payment (e.g., "Invoice #12345", "Rent - January 2025")
+     * @param payReference Human-readable reference for the payment (e.g., "Invoice #12345", "Rent - January 2025")
      * @return payNoteId Unique identifier for the created PayNote
      */
     function createPayNote(
         address recipient,
         uint256 amount,
-        string calldata reference
-    ) external returns (bytes32 payNoteId);
+        string calldata payReference
+    ) external payable returns (bytes32 payNoteId);
 
     /**
      * @dev Marks a PayNote as fulfilled with transaction details
@@ -94,9 +94,9 @@ interface IPayNoteRegistry {
     /**
      * @dev Gets the reference string for a PayNote
      * @param payNoteId Unique identifier for the PayNote
-     * @return reference The reference string associated with the PayNote
+     * @return payReference The reference string associated with the PayNote
      */
-    function getReference(bytes32 payNoteId) external view returns (string memory reference);
+    function getReference(bytes32 payNoteId) external view returns (string memory payReference);
 
     /**
      * @dev Gets all PayNotes created by a specific sender
