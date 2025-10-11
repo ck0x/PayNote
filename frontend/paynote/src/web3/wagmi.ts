@@ -1,11 +1,11 @@
 "use client";
 import { http, createConfig } from "wagmi";
-import { mainnet, polygon, sepolia } from "wagmi/chains";
+import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
-export const config = createConfig({
-  chains: [sepolia], // adjust per your target
-  transports: {
-    [sepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
-  },
+const config = getDefaultConfig({
+  appName: "PayNote",
+  projectId: "fa9ae0127303a50438814ee2ee80d945",
+  chains: [mainnet, polygon, optimism, arbitrum, base],
   ssr: true,
 });
