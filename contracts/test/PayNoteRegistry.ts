@@ -4,6 +4,11 @@ import { describe, it } from "node:test";
 import { parseEther } from "viem";
 
 describe("PayNoteRegistry", function () {
+  // Helper function to compare addresses case-insensitively
+  function expectAddressEqual(actual: string | undefined, expected: string) {
+    expect(actual?.toLowerCase()).to.equal(expected.toLowerCase());
+  }
+
   // Fixture to deploy the contract
   async function deployPayNoteRegistryFixture() {
     const { viem } = await network.connect();
@@ -30,9 +35,7 @@ describe("PayNoteRegistry", function () {
       const { payNoteRegistry, owner } = await deployPayNoteRegistryFixture();
 
       const contractOwner = await payNoteRegistry.read.owner();
-      expect(contractOwner.toLowerCase()).to.equal(
-        owner.account.address.toLowerCase()
-      );
+      expectAddressEqual(contractOwner, owner.account.address);
     });
 
     it("Should start with zero registration fee", async function () {
@@ -91,12 +94,8 @@ describe("PayNoteRegistry", function () {
 
       const events = await payNoteRegistry.getEvents.PaymentSent();
       expect(events.length).to.be.greaterThan(0);
-      expect(events[0].args.sender?.toLowerCase()).to.equal(
-        sender.account.address.toLowerCase()
-      );
-      expect(events[0].args.recipient?.toLowerCase()).to.equal(
-        recipient.account.address.toLowerCase()
-      );
+      expectAddressEqual(events[0].args.sender, sender.account.address);
+      expectAddressEqual(events[0].args.recipient, recipient.account.address);
     });
   });
 
@@ -122,12 +121,8 @@ describe("PayNoteRegistry", function () {
 
       const payNote = await payNoteRegistry.read.resolvePayNote([payNoteId]);
 
-      expect(payNote.sender.toLowerCase()).to.equal(
-        sender.account.address.toLowerCase()
-      );
-      expect(payNote.recipient.toLowerCase()).to.equal(
-        recipient.account.address.toLowerCase()
-      );
+      expectAddressEqual(payNote.sender, sender.account.address);
+      expectAddressEqual(payNote.recipient, recipient.account.address);
       expect(payNote.amount).to.equal(amount);
       expect(payNote.payReference).to.equal(reference);
     });
