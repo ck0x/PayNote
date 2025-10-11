@@ -1,5 +1,7 @@
 # Deploy PayNoteRegistry to Optimism Sepolia
 
+This guide uses **Hardhat 3's encrypted keystore** for secure secret management. No `.env` files needed!
+
 ## Prerequisites
 
 ### 1. Get Sepolia ETH (for bridging)
@@ -13,25 +15,14 @@
 - Wait ~1-2 minutes for bridging
 - You need ~0.01 ETH for deployment
 
-### 3. Get Optimism Sepolia RPC URL
-**Option A: Use Public RPC (easiest)**
-```
-https://sepolia.optimism.io
-```
+### 3. Get Your Wallet Private Key
+From MetaMask:
+1. Click on your account
+2. Account Details → Show Private Key
+3. Enter your password
+4. Copy the private key (keep it secret!)
 
-**Option B: Use Alchemy (recommended for production)**
-1. Sign up at https://www.alchemy.com/
-2. Create new app
-3. Select "Optimism Sepolia"
-4. Copy the HTTPS URL
-
-**Option C: Use Infura**
-1. Sign up at https://infura.io/
-2. Create new project
-3. Select "Optimism Sepolia"
-4. Copy the endpoint URL
-
-### 4. Get Optimism Etherscan API Key (for verification)
+### 4. Get Optimism Etherscan API Key (optional, for verification)
 1. Go to https://optimistic.etherscan.io/
 2. Sign up/login
 3. Go to API Keys
@@ -40,22 +31,46 @@ https://sepolia.optimism.io
 
 ---
 
-## Setup Environment Variables
+## Setup Encrypted Secrets (Hardhat Keystore)
 
-Create a `.env` file in the contracts directory:
+Hardhat 3 includes an **encrypted keystore** that securely stores your secrets. You'll create a password-protected keystore once, then Hardhat will prompt for the password when needed.
 
+### Step 1: Set Your Private Key
 ```bash
-# Your deployer wallet private key (NEVER commit this!)
-PRIVATE_KEY=your_private_key_here
-
-# Optimism Sepolia RPC URL
-OPTIMISM_SEPOLIA_RPC_URL=https://sepolia.optimism.io
-
-# Optional: For contract verification
-OPTIMISM_ETHERSCAN_API_KEY=your_etherscan_api_key_here
+npx hardhat keystore set OPTIMISM_SEPOLIA_PRIVATE_KEY
 ```
 
-**⚠️ IMPORTANT: Add .env to .gitignore!**
+You'll be prompted:
+1. **First time:** Create a password for your keystore (remember this!)
+2. Enter your wallet private key
+3. Done! Your key is now encrypted
+
+### Step 2: Set RPC URL (Optional)
+The config uses a default public RPC, but you can override it:
+
+```bash
+npx hardhat keystore set OPTIMISM_SEPOLIA_RPC_URL
+```
+Enter: `https://sepolia.optimism.io` (or your Alchemy/Infura URL)
+
+### Step 3: Set Etherscan API Key (Optional, for verification)
+```bash
+npx hardhat keystore set OPTIMISM_ETHERSCAN_API_KEY
+```
+Enter your API key from Optimistic Etherscan.
+
+### Verify Your Keystore
+```bash
+npx hardhat keystore list
+```
+
+Should show:
+```
+Keys in the production keystore:
+OPTIMISM_SEPOLIA_RPC_URL
+OPTIMISM_SEPOLIA_PRIVATE_KEY
+OPTIMISM_ETHERSCAN_API_KEY
+```
 
 ---
 
@@ -77,16 +92,19 @@ npx hardhat ignition deploy ignition/modules/PayNoteRegistry.ts --network optimi
 ```
 
 **What happens:**
-1. Connects to Optimism Sepolia
-2. Deploys PayNoteRegistry contract
-3. You (deployer) become the owner
-4. Returns deployment address
+1. Hardhat prompts for your keystore password
+2. Decrypts your private key
+3. Connects to Optimism Sepolia
+4. Deploys PayNoteRegistry contract
+5. You (deployer) become the owner
+6. Returns deployment address
 
 **Expected output:**
 ```
+[hardhat-keystore] Enter the password: ********
 ✔ Confirm deploy to network optimismSepolia (11155420)? … yes
-Deployed Addresses
 
+Deployed Addresses
 PayNoteRegistryModule#PayNoteRegistry - 0x1234...5678
 ```
 
@@ -98,23 +116,47 @@ Copy the deployment address and save it! You'll need it for:
 
 ---
 
-## Verify Contract on Etherscan (Optional but Recommended)
+## Verify Contract on Block Explorers
 
-### Manual Verification
+Verification makes your contract source code public and verifiable on Etherscan and Blockscout.
+
+### Verify with Build Profile
 ```bash
-npx hardhat verify --network optimismSepolia <CONTRACT_ADDRESS> <CONSTRUCTOR_ARG>
+npx hardhat verify --network optimismSepolia --build-profile production <CONTRACT_ADDRESS> <OWNER_ADDRESS>
 ```
 
-Example:
+**Example:**
 ```bash
-npx hardhat verify --network optimismSepolia 0x1234567890123456789012345678901234567890 0xYourWalletAddress
+npx hardhat verify --network optimismSepolia --build-profile production \
+  0x0294b9c5902361b0f11bBAf0F1A4ca9F745ec13f \
+  0x8689ff1c035314d6ef54c96998e25276e2e5a19c
+```
+
+**What happens:**
+1. Hardhat prompts for keystore password (to decrypt Etherscan API key)
+2. Compiles with `production` profile (same as deployment)
+3. Submits to both Etherscan and Blockscout
+4. Polls for verification results
+
+**Expected output:**
+```
+[hardhat-keystore] Enter the password: ********
+
+=== Etherscan ===
+✅ Contract verified successfully on Optimism Sepolia Etherscan!
+   Explorer: https://sepolia-optimism.etherscan.io/address/0x...#code
+
+=== Blockscout ===
+✅ Contract verified successfully on Blockscout!
+   Explorer: https://optimism-sepolia.blockscout.com/address/0x...#code
 ```
 
 ### What verification does:
-- ✅ Makes source code public
+- ✅ Makes source code publicly viewable
 - ✅ Enables Etherscan UI interactions
 - ✅ Builds trust with users
-- ✅ Allows others to verify your code
+- ✅ Allows others to audit your code
+- ✅ Verifies on both Etherscan AND Blockscout
 
 ---
 
@@ -200,24 +242,60 @@ console.log("PayNote details:", {
 
 ## Troubleshooting
 
+### Error: "Configuration Variable not found"
+**Problem:** Hardhat can't find your encrypted secret.
+**Solution:**
+```bash
+# List what's in your keystore
+npx hardhat keystore list
+
+# Add missing variable
+npx hardhat keystore set OPTIMISM_SEPOLIA_PRIVATE_KEY
+```
+
 ### Error: "insufficient funds"
+**Problem:** Not enough ETH for deployment.
+**Solution:**
 - Get more Sepolia ETH from faucet
 - Bridge to Optimism Sepolia
 - Check balance: https://sepolia-optimism.etherscan.io/
 
-### Error: "network not found"
-- Check your .env file has PRIVATE_KEY
-- Verify RPC URL is correct
-- Try public RPC: https://sepolia.optimism.io
+### Error: "Invalid password"
+**Problem:** Wrong keystore password.
+**Solution:**
+- Remember the password you set with `keystore set`
+- If forgotten, you'll need to recreate the keystore:
+  ```bash
+  # Remove old keystore (BE CAREFUL!)
+  rm -rf ~/.hardhat-keystore/production
+  
+  # Set secrets again with new password
+  npx hardhat keystore set OPTIMISM_SEPOLIA_PRIVATE_KEY
+  ```
 
 ### Error: "nonce too high"
+**Problem:** Nonce mismatch in MetaMask.
+**Solution:**
 - Reset your account in MetaMask
 - Settings → Advanced → Clear activity tab data
 
 ### Error: "contract verification failed"
-- Make sure you're using the correct constructor arguments
-- Check that compiler version matches (0.8.28)
-- Verify optimizer is enabled (runs: 200)
+**Problem:** Verification didn't match deployed bytecode.
+**Solution:**
+- Use `--build-profile production` flag (Ignition uses production profile)
+- Make sure you provide correct constructor arguments (owner address)
+- Example:
+  ```bash
+  npx hardhat verify --network optimismSepolia --build-profile production \
+    CONTRACT_ADDRESS OWNER_ADDRESS
+  ```
+
+### Keystore Location
+Your encrypted secrets are stored at:
+- **Linux/Mac:** `~/.hardhat-keystore/production/keystore.json`
+- **Windows:** `%USERPROFILE%\.hardhat-keystore\production\keystore.json`
+
+This file is encrypted and safe to backup (but keep your password secret!).
 
 ---
 
