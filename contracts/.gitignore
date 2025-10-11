@@ -1,6 +1,13 @@
 # Node modules
 /node_modules
 
+# Environment variables (contains private keys!)
+.env
+.env.local
+
+# Hardhat Keystore (encrypted secrets)
+/.hardhat-keystore
+
 # Compilation output
 /dist
 
@@ -18,3 +25,10 @@
 
 # Hardhat coverage reports
 /coverage
+
+# Hardhat Ignition deployments (testnet only)
+# Production deployments should be committed
+/ignition/deployments/chain-11155420/
+/ignition/deployments/chain-420/
+# Uncomment to ignore all deployments:
+# /ignition/deployments/
