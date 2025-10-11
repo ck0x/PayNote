@@ -3,15 +3,6 @@ import type { HardhatUserConfig } from "hardhat/config";
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import { configVariable } from "hardhat/config";
 
-// Helper to get config variable with fallback
-function getConfigVariable(name: string, defaultValue?: string) {
-  try {
-    return configVariable(name);
-  } catch {
-    return defaultValue || "";
-  }
-}
-
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
   solidity: {
@@ -48,20 +39,20 @@ const config: HardhatUserConfig = {
     sepolia: {
       type: "http",
       chainType: "l1",
-      url: getConfigVariable("SEPOLIA_RPC_URL"),
-      accounts: [getConfigVariable("SEPOLIA_PRIVATE_KEY")],
+      url: configVariable("SEPOLIA_RPC_URL"),
+      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
     },
     optimismSepolia: {
       type: "http",
       chainType: "op",
-      url: getConfigVariable("OPTIMISM_SEPOLIA_RPC_URL", "https://sepolia.optimism.io"),
-      accounts: [getConfigVariable("PRIVATE_KEY")],
+      url: configVariable("OPTIMISM_SEPOLIA_RPC_URL"),
+      accounts: [configVariable("OPTIMISM_SEPOLIA_PRIVATE_KEY")],
     },
     optimism: {
       type: "http",
       chainType: "op",
-      url: getConfigVariable("OPTIMISM_RPC_URL", "https://mainnet.optimism.io"),
-      accounts: [getConfigVariable("PRIVATE_KEY")],
+      url: configVariable("OPTIMISM_RPC_URL"),
+      accounts: [configVariable("OPTIMISM_PRIVATE_KEY")],
     },
   },
 };
