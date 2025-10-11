@@ -44,44 +44,59 @@ describe("PayNoteRegistry", function () {
     it("Should have correct version", async function () {
       const { payNoteRegistry } = await deployPayNoteRegistryFixture();
 
-      expect(await payNoteRegistry.read.VERSION()).to.equal("1.0.0");
+      expect(await payNoteRegistry.read.VERSION()).to.equal("2.0.0");
     });
   });
 
-  describe("Creating PayNotes", function () {
-    it("Should create a PayNote successfully", async function () {
-      const { payNoteRegistry, sender, recipient, publicClient} =
-        await deployPayNoteRegistryFixture();
-
-      const amount = parseEther("1.5");
-      const reference = "Invoice #12345";
-
-      const hash = await payNoteRegistry.write.createPayNote(
-        [recipient.account.address, amount, reference],
-        { account: sender.account }
-      );
-
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      expect(await payNoteRegistry.read.getTotalPayNotes()).to.equal(1n);
-    });
-
-    it("Should emit PayNoteCreated event", async function () {
+  describe("Sending Payments with References", function () {
+    it("Should send payment and store reference atomically", async function () {
       const { payNoteRegistry, sender, recipient, publicClient } =
         await deployPayNoteRegistryFixture();
 
       const amount = parseEther("1.5");
       const reference = "Invoice #12345";
 
-      const hash = await payNoteRegistry.write.createPayNote(
-        [recipient.account.address, amount, reference],
-        { account: sender.account }
+      const recipientBalanceBefore = await publicClient.getBalance({
+        address: recipient.account.address,
+      });
+
+      const hash = await payNoteRegistry.write.sendPaymentWithReference(
+        [recipient.account.address, reference],
+        { account: sender.account, value: amount }
       );
 
       await publicClient.waitForTransactionReceipt({ hash });
 
-      const events = await payNoteRegistry.getEvents.PayNoteCreated();
+      const recipientBalanceAfter = await publicClient.getBalance({
+        address: recipient.account.address,
+      });
+
+      expect(await payNoteRegistry.read.getTotalPayNotes()).to.equal(1n);
+      expect(recipientBalanceAfter - recipientBalanceBefore).to.equal(amount);
+    });
+
+    it("Should emit PaymentSent event", async function () {
+      const { payNoteRegistry, sender, recipient, publicClient } =
+        await deployPayNoteRegistryFixture();
+
+      const amount = parseEther("1.5");
+      const reference = "Invoice #12345";
+
+      const hash = await payNoteRegistry.write.sendPaymentWithReference(
+        [recipient.account.address, reference],
+        { account: sender.account, value: amount }
+      );
+
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      const events = await payNoteRegistry.getEvents.PaymentSent();
       expect(events.length).to.be.greaterThan(0);
+      expect(events[0].args.sender?.toLowerCase()).to.equal(
+        sender.account.address.toLowerCase()
+      );
+      expect(events[0].args.recipient?.toLowerCase()).to.equal(
+        recipient.account.address.toLowerCase()
+      );
     });
   });
 
@@ -93,9 +108,9 @@ describe("PayNoteRegistry", function () {
       const amount = parseEther("1.5");
       const reference = "Invoice #12345";
 
-      const hash = await payNoteRegistry.write.createPayNote(
-        [recipient.account.address, amount, reference],
-        { account: sender.account }
+      const hash = await payNoteRegistry.write.sendPaymentWithReference(
+        [recipient.account.address, reference],
+        { account: sender.account, value: amount }
       );
 
       await publicClient.waitForTransactionReceipt({ hash });
@@ -115,7 +130,6 @@ describe("PayNoteRegistry", function () {
       );
       expect(payNote.amount).to.equal(amount);
       expect(payNote.payReference).to.equal(reference);
-      expect(payNote.isFulfilled).to.equal(false);
     });
   });
 });

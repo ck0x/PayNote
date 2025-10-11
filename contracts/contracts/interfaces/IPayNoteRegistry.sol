@@ -4,37 +4,25 @@ pragma solidity ^0.8.28;
 /**
  * @title IPayNoteRegistry
  * @dev Interface for PayNote Registry - a standard for attaching references to blockchain transactions
- * @notice This interface defines the core functionality that any PayNote Registry implementation must provide
+ * @notice This interface defines the core functionality for sending payments with on-chain references
  * Similar to ENS, this is designed to become a standard protocol for transaction references
  */
 interface IPayNoteRegistry {
     /**
-     * @dev Emitted when a new PayNote is created
+     * @dev Emitted when a payment with reference is sent
      * @param payNoteId Unique identifier for the PayNote
-     * @param sender Address that created the PayNote
-     * @param recipient Address that will receive the payment
-     * @param amount Amount associated with the PayNote
+     * @param sender Address that sent the payment
+     * @param recipient Address that received the payment
+     * @param amount Amount sent
      * @param payReference Human-readable reference for the payment
-     * @param timestamp When the PayNote was created
+     * @param timestamp When the payment was sent
      */
-    event PayNoteCreated(
+    event PaymentSent(
         bytes32 indexed payNoteId,
         address indexed sender,
         address indexed recipient,
         uint256 amount,
         string payReference,
-        uint256 timestamp
-    );
-
-    /**
-     * @dev Emitted when a PayNote is fulfilled (payment sent)
-     * @param payNoteId Unique identifier for the PayNote
-     * @param txHash Transaction hash of the payment
-     * @param timestamp When the PayNote was fulfilled
-     */
-    event PayNoteFulfilled(
-        bytes32 indexed payNoteId,
-        bytes32 txHash,
         uint256 timestamp
     );
 
@@ -58,31 +46,21 @@ interface IPayNoteRegistry {
         address recipient;
         uint256 amount;
         string payReference;
-        uint256 createdAt;
-        uint256 fulfilledAt;
+        uint256 timestamp;
         bytes32 txHash;
-        bool isFulfilled;
     }
 
     /**
-     * @dev Creates a new PayNote with a reference
+     * @dev Sends a payment with an attached reference
      * @param recipient Address that will receive the payment
-     * @param amount Amount to be paid
      * @param payReference Human-readable reference for the payment (e.g., "Invoice #12345", "Rent - January 2025")
      * @return payNoteId Unique identifier for the created PayNote
+     * @notice msg.value is the amount to send. Payment is forwarded immediately to recipient.
      */
-    function createPayNote(
+    function sendPaymentWithReference(
         address recipient,
-        uint256 amount,
         string calldata payReference
     ) external payable returns (bytes32 payNoteId);
-
-    /**
-     * @dev Marks a PayNote as fulfilled with transaction details
-     * @param payNoteId Unique identifier for the PayNote
-     * @param txHash Transaction hash of the payment
-     */
-    function fulfillPayNote(bytes32 payNoteId, bytes32 txHash) external;
 
     /**
      * @dev Resolves a PayNote ID to get its full details
@@ -99,16 +77,16 @@ interface IPayNoteRegistry {
     function getReference(bytes32 payNoteId) external view returns (string memory payReference);
 
     /**
-     * @dev Gets all PayNotes created by a specific sender
+     * @dev Gets all PayNotes sent by a specific address
      * @param sender Address to query
-     * @return payNoteIds Array of PayNote IDs created by the sender
+     * @return payNoteIds Array of PayNote IDs sent by the address
      */
     function getPayNotesBySender(address sender) external view returns (bytes32[] memory payNoteIds);
 
     /**
-     * @dev Gets all PayNotes for a specific recipient
+     * @dev Gets all PayNotes received by a specific address
      * @param recipient Address to query
-     * @return payNoteIds Array of PayNote IDs for the recipient
+     * @return payNoteIds Array of PayNote IDs received by the address
      */
     function getPayNotesByRecipient(address recipient) external view returns (bytes32[] memory payNoteIds);
 

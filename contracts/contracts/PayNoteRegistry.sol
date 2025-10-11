@@ -7,9 +7,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title PayNoteRegistry
- * @dev Implementation of the PayNote Registry standard
- * @notice This contract allows users to create payment references that are stored on-chain
- * and can be resolved by anyone. It's designed to become a standard protocol for transaction references.
+ * @dev Implementation of the PayNote Registry standard - Send payments with on-chain references
+ * @notice This contract allows users to send payments with references attached in a single atomic transaction
  * 
  * Use Cases:
  * - Invoice payments with reference numbers
@@ -17,6 +16,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * - Subscription payments with service details
  * - Donation tracking with donor messages
  * - Business-to-business transaction records
+ * - Any payment that needs an immutable reference
  */
 contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     // Storage
@@ -31,7 +31,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     uint256 public registrationFee;
     
     // Protocol version for future upgrades
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "2.0.0";
     
     /**
      * @dev Constructor
@@ -52,15 +52,19 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IPayNoteRegistry
      */
-    function createPayNote(
+    function sendPaymentWithReference(
         address recipient,
-        uint256 amount,
         string calldata payReference
     ) external payable override nonReentrant returns (bytes32 payNoteId) {
         require(recipient != address(0), "Invalid recipient address");
+        require(msg.value > 0, "Payment amount must be greater than 0");
         require(bytes(payReference).length > 0, "Reference cannot be empty");
         require(bytes(payReference).length <= 256, "Reference too long");
-        require(msg.value >= registrationFee, "Insufficient registration fee");
+        
+        // Calculate total cost (payment + registration fee)
+        uint256 paymentAmount = msg.value - registrationFee;
+        require(msg.value >= registrationFee, "Insufficient funds for registration fee");
+        require(paymentAmount > 0, "Payment amount after fees must be greater than 0");
         
         // Generate unique PayNote ID
         payNoteCounter++;
@@ -68,7 +72,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
             abi.encodePacked(
                 msg.sender,
                 recipient,
-                amount,
+                paymentAmount,
                 payReference,
                 block.timestamp,
                 payNoteCounter
@@ -78,52 +82,34 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
         // Ensure ID is unique (should always be true with counter)
         require(payNotes[payNoteId].sender == address(0), "PayNote ID collision");
         
-        // Create the PayNote
+        // Forward payment to recipient immediately
+        (bool success, ) = recipient.call{value: paymentAmount}("");
+        require(success, "Payment transfer failed");
+        
+        // Store the PayNote
         payNotes[payNoteId] = PayNote({
             sender: msg.sender,
             recipient: recipient,
-            amount: amount,
+            amount: paymentAmount,
             payReference: payReference,
-            createdAt: block.timestamp,
-            fulfilledAt: 0,
-            txHash: bytes32(0),
-            isFulfilled: false
+            timestamp: block.timestamp,
+            txHash: bytes32(uint256(uint160(address(this)))) // Placeholder, will be the actual tx hash from events
         });
         
         // Track PayNotes by sender and recipient
         senderPayNotes[msg.sender].push(payNoteId);
         recipientPayNotes[recipient].push(payNoteId);
         
-        emit PayNoteCreated(
+        emit PaymentSent(
             payNoteId,
             msg.sender,
             recipient,
-            amount,
+            paymentAmount,
             payReference,
             block.timestamp
         );
         
         return payNoteId;
-    }
-    
-    /**
-     * @inheritdoc IPayNoteRegistry
-     */
-    function fulfillPayNote(
-        bytes32 payNoteId,
-        bytes32 txHash
-    ) external override payNoteExistsModifier(payNoteId) {
-        PayNote storage payNote = payNotes[payNoteId];
-        
-        require(msg.sender == payNote.sender, "Only sender can fulfill PayNote");
-        require(!payNote.isFulfilled, "PayNote already fulfilled");
-        require(txHash != bytes32(0), "Invalid transaction hash");
-        
-        payNote.isFulfilled = true;
-        payNote.fulfilledAt = block.timestamp;
-        payNote.txHash = txHash;
-        
-        emit PayNoteFulfilled(payNoteId, txHash, block.timestamp);
     }
     
     /**
@@ -170,28 +156,6 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Updates the reference for an existing PayNote (only by sender, only if not fulfilled)
-     * @param payNoteId Unique identifier for the PayNote
-     * @param newReference New reference string
-     */
-    function updateReference(
-        bytes32 payNoteId,
-        string calldata newReference
-    ) external payNoteExistsModifier(payNoteId) {
-        PayNote storage payNote = payNotes[payNoteId];
-        
-        require(msg.sender == payNote.sender, "Only sender can update reference");
-        require(!payNote.isFulfilled, "Cannot update fulfilled PayNote");
-        require(bytes(newReference).length > 0, "Reference cannot be empty");
-        require(bytes(newReference).length <= 256, "Reference too long");
-        
-        string memory oldReference = payNote.payReference;
-        payNote.payReference = newReference;
-        
-        emit PayNoteReferenceUpdated(payNoteId, oldReference, newReference);
-    }
-    
-    /**
      * @dev Sets the registration fee (only owner)
      * @param newFee New registration fee in wei
      */
@@ -202,7 +166,7 @@ contract PayNoteRegistry is IPayNoteRegistry, Ownable, ReentrancyGuard {
     /**
      * @dev Withdraws collected fees (only owner)
      */
-    function withdrawFees() external onlyOwner {
+    function withdrawFees() external onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to withdraw");
         
