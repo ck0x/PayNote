@@ -2,6 +2,6 @@
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-export default function WalletConnectButton() {
-  return <ConnectButton />;
+export function WalletConnectButton() {
+  return <ConnectButton showBalance={false} chainStatus="icon" />;
 }
