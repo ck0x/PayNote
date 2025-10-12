@@ -1,7 +1,7 @@
 "use client";
 
-import { http } from "wagmi";
-import { optimism, optimismSepolia } from "wagmi/chains";
+import { Config, cookieToInitialState, http, WagmiProvider } from "wagmi";
+import { mainnet, optimism, optimismSepolia } from "wagmi/chains";
 import {
   getDefaultConfig,
   RainbowKitProvider,
@@ -10,9 +10,13 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { cookieStorage, createStorage } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { createAppKit, Metadata } from "@reown/appkit";
 
 export const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
+
+const queryClient = new QueryClient();
 
 if (!projectId) {
   throw new Error("ReOwn Project ID is not defined");
@@ -21,7 +25,16 @@ if (!projectId) {
 const target =
   process.env.NEXT_PUBLIC_CHAIN_ID === "10" ? optimism : optimismSepolia;
 
-export const wagmiConfig = getDefaultConfig({
+export const networks = [optimism, optimismSepolia];
+
+export const metadata: Metadata = {
+  name: "PayNote",
+  description: "Web3 payments and transaction analysis dashboard",
+  url: "https://github.com/ck0x/PayNote", // origin must match your domain & subdomain
+  icons: ["https://avatars.githubusercontent.com/u/179229932"],
+};
+
+export const rainbowConfig = getDefaultConfig({
   appName: "PayNote",
   projectId: projectId,
   chains: [target],
@@ -32,20 +45,53 @@ export const wagmiConfig = getDefaultConfig({
   storage: createStorage({ storage: cookieStorage }), // persist connectors
 });
 
-export function Web3Provider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+export const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId,
+  ssr: true,
+});
 
+export const appkit = createAppKit({
+  adapters: [wagmiAdapter],
+  networks: [mainnet, optimism, optimismSepolia],
+  projectId,
+  metadata,
+  features: {
+    analytics: true,
+    email: true,
+    socials: ["google", "x", "github", "discord"],
+    emailShowWallets: true,
+  },
+  themeMode: "light",
+});
+
+export function Web3Provider({
+  children,
+  cookies,
+}: {
+  children: ReactNode;
+  cookies?: string;
+}) {
+  const initialState = cookieToInitialState(
+    wagmiAdapter.wagmiConfig as Config,
+    cookies
+  );
   return (
     <QueryClientProvider client={queryClient}>
-      <RainbowKitProvider
-        appInfo={{ appName: "PayNote" }}
-        theme={{
-          lightMode: lightTheme(),
-          darkMode: darkTheme(),
-        }}
+      <WagmiProvider
+        config={wagmiAdapter.wagmiConfig as Config}
+        initialState={initialState}
       >
-        {children}
-      </RainbowKitProvider>
+        <RainbowKitProvider
+          appInfo={{ appName: "PayNote" }}
+          theme={{
+            lightMode: lightTheme(),
+            darkMode: darkTheme(),
+          }}
+        >
+          {children}
+        </RainbowKitProvider>
+      </WagmiProvider>
     </QueryClientProvider>
   );
 }

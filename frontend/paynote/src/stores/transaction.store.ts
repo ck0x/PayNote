@@ -1,25 +1,36 @@
 import { makeAutoObservable, flow } from "mobx";
+import { Category } from "./types/Category";
 
-export type TxCategory = "Personal" | "R&D" | "Customer" | "Ops" | "Unknown";
-
+// TODO - UPDATE CATEGORIES FROM THESE PLACEHOLDERS
 export class TransactionStore {
   loading = false;
   error: string | null = null;
-  // TODO - ENVIO REPLACE – you’ll replace with Envio-typed results later
+  categoryFilter: Category = Category.All;
+  search = "";
+
+  // TODO - ENVIO REPLACE – you'll replace with Envio-typed results later
   items: Array<{
     hash: string;
     from: string;
     to: string;
     value: string;
     ts: string;
-    category?: TxCategory;
+    category?: Category;
   }> = [];
 
   constructor() {
     makeAutoObservable(this);
   }
 
-  setCategory(hash: string, category: TxCategory) {
+  setCategory(c: TransactionStore["categoryFilter"]) {
+    this.categoryFilter = c;
+  }
+
+  setSearch(q: string) {
+    this.search = q;
+  }
+
+  setItemCategory(hash: string, category: Category) {
     const tx = this.items.find((t) => t.hash === hash);
     if (tx) tx.category = category;
   }
@@ -36,4 +47,14 @@ export class TransactionStore {
       this.loading = false;
     }
   });
+}
+
+export class RootStore {
+  transactions = new TransactionStore();
+}
+
+let _store: RootStore | null = null;
+export function getRootStore() {
+  if (!_store) _store = new RootStore();
+  return _store;
 }

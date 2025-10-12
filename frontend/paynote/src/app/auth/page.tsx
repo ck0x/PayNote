@@ -1,6 +1,6 @@
 "use client";
 
-import WalletConnectButton from "@/components/WalletConnectButton";
+import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
 
 export default function AuthPage() {
   return (

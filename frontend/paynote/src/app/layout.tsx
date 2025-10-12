@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Providers from "./providers";
+import Providers from "../context/providers";
 import "./globals.css";
 import { ReactNode } from "react";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,13 +14,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "PayNote",
-  description: "Web3 payments and transaction analysisdashboard",
-  // url: "https://appkitexampleapp.com", // origin must match your domain & subdomain
-  // icons: ["https://avatars.githubusercontent.com/u/179229932"],
-};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

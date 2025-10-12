@@ -1,0 +1,16 @@
+"use client";
+
+import "@rainbow-me/rainbowkit/styles.css";
+import { Web3Provider } from "../config/wagmi";
+import { ThemeProvider } from "next-themes";
+import { StoreProvider } from "@/stores/provider";
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <Web3Provider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <StoreProvider>{children}</StoreProvider>
+      </ThemeProvider>
+    </Web3Provider>
+  );
+}
