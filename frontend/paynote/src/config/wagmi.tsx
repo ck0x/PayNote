@@ -2,17 +2,12 @@
 
 import { Config, cookieToInitialState, http, WagmiProvider } from "wagmi";
 import { mainnet, optimism, optimismSepolia } from "wagmi/chains";
-import {
-  getDefaultConfig,
-  RainbowKitProvider,
-  darkTheme,
-  lightTheme,
-} from "@rainbow-me/rainbowkit";
 import { cookieStorage, createStorage } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { createAppKit, Metadata } from "@reown/appkit";
+import { createConfig } from "wagmi";
 
 export const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
 
@@ -34,15 +29,14 @@ export const metadata: Metadata = {
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 
-export const rainbowConfig = getDefaultConfig({
-  appName: "PayNote",
-  projectId: projectId,
+export const wagmiConfig = createConfig({
   chains: [target],
   transports: {
-    [target.id]: http(),
+    [optimism.id]: http(),
+    [optimismSepolia.id]: http(),
   },
-  ssr: true, // Required for Next.js
-  storage: createStorage({ storage: cookieStorage }), // persist connectors
+  ssr: true,
+  storage: createStorage({ storage: cookieStorage }),
 });
 
 export const wagmiAdapter = new WagmiAdapter({
@@ -72,25 +66,11 @@ export function Web3Provider({
   children: ReactNode;
   cookies?: string;
 }) {
-  const initialState = cookieToInitialState(
-    wagmiAdapter.wagmiConfig as Config,
-    cookies
-  );
+  const initialState = cookieToInitialState(wagmiConfig as Config, cookies);
   return (
     <QueryClientProvider client={queryClient}>
-      <WagmiProvider
-        config={wagmiAdapter.wagmiConfig as Config}
-        initialState={initialState}
-      >
-        <RainbowKitProvider
-          appInfo={{ appName: "PayNote" }}
-          theme={{
-            lightMode: lightTheme(),
-            darkMode: darkTheme(),
-          }}
-        >
-          {children}
-        </RainbowKitProvider>
+      <WagmiProvider config={wagmiConfig as Config} initialState={initialState}>
+        {children}
       </WagmiProvider>
     </QueryClientProvider>
   );

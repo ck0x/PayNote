@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "../context/providers";
 import { ReactNode } from "react";
-import Sidebar from "@/components/navigation/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}
       >
-        <Providers>
-          <Sidebar>{children}</Sidebar>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
