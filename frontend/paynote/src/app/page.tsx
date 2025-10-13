@@ -1,12 +1,16 @@
 import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
 import { SocialLoginCTA } from "@/components/wallet/social-login";
 import { CategoryFilter } from "@/components/filters/category-filter";
+import SidebarToggle from "@/components/navigation/sidebar-toggle";
 
 export default function Landing() {
   return (
     <main className="mx-auto max-w-5xl p-8 space-y-8">
       <section className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">PayNote</h1>
+        <div className="flex items-center gap-3">
+          <SidebarToggle />
+          <h1 className="text-3xl font-semibold">PayNote</h1>
+        </div>
         <div className="flex gap-3">
           {/* <SocialLoginCTA /> */}
           <WalletConnectButton />

@@ -1,9 +1,9 @@
+import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "../context/providers";
-import "./globals.css";
 import { ReactNode } from "react";
-import Navbar from "@/components/navbar";
+import Sidebar from "@/components/navigation/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,14 +15,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const metadata: Metadata = {
+  title: "PayNote",
+  description: "Web3 payment management platform",
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}
+      >
         <Providers>
-          <Navbar>
-            <main className="p-4">{children}</main>
-          </Navbar>
+          <Sidebar>{children}</Sidebar>
         </Providers>
       </body>
     </html>
