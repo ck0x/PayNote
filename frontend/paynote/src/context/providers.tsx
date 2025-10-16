@@ -15,10 +15,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       appId={privyAppId}
       clientId={privyClientId}
       config={{
-        loginMethods: ["email", "google", "twitter", "github"],
+        loginMethods: ["email", "google", "twitter", "farcaster", "github"],
         appearance: {
           theme: "light",
           accentColor: "#676FFF",
+          walletChainType: "ethereum-only",
+        },
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
         },
       }}
     >
