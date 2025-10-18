@@ -40,20 +40,23 @@ export default function Landing() {
         <section className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <SidebarToggle />
-            <h1 className="text-3xl font-semibold">PayNote</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-feather-600 to-feather-500 bg-clip-text text-transparent">
+              PayNote
+            </h1>
           </div>
           <div className="flex gap-3">
             <WalletConnectButton />
           </div>
         </section>
 
-        <section className="rounded-2xl border p-6">
+        <section className="rounded-lg border-2 border-feather-600/10 p-6 bg-gradient-to-br from-ice-100/50 to-paper-0 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-4 mb-4">
             <CategoryFilter />
             {/* search input, date range, etc. */}
           </div>
           {/* Placeholder: list of public on-chain transactions */}
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-graphite-700 flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-feather-600 animate-pulse"></div>
             Public on-chain transactions will appear here. (Envio integration
             coming.)
           </div>

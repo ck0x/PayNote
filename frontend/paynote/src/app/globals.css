@@ -44,72 +44,120 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* PayNote Theme - Light Mode */
+  --radius: 0.75rem; /* 12px default */
+  
+  /* Base colors from PayNote spec */
+  --background: #FFFFFF; /* paper-0 */
+  --foreground: #0A0A0A; /* ink-900 */
+  
+  /* Card */
+  --card: #FFFFFF; /* paper-0 */
+  --card-foreground: #0A0A0A; /* ink-900 */
+  
+  /* Popover */
+  --popover: #FFFFFF; /* paper-0 */
+  --popover-foreground: #0A0A0A; /* ink-900 */
+  
+  /* Primary - feather colors */
+  --primary: #1E88E5; /* feather-600 */
+  --primary-foreground: #FFFFFF; /* paper-0 */
+  
+  /* Secondary */
+  --secondary: #E9F2FF; /* ice-100 */
+  --secondary-foreground: #0A0A0A; /* ink-900 */
+  
+  /* Muted */
+  --muted: #E9F2FF; /* ice-100 */
+  --muted-foreground: #4A4A4A; /* graphite-700 */
+  
+  /* Accent */
+  --accent: #E9F2FF; /* ice-100 */
+  --accent-foreground: #1E88E5; /* feather-600 */
+  
+  /* Destructive */
+  --destructive: #DC2626; /* danger-500 */
+  
+  /* Border & Input */
+  --border: #D6D6D6; /* silver-200 */
+  --input: #D6D6D6; /* silver-200 */
+  
+  /* Ring (focus) */
+  --ring: #2196F3; /* feather-500 */
+  
+  /* Chart colors */
+  --chart-1: #1E88E5; /* feather-600 */
+  --chart-2: #16A34A; /* success-500 */
+  --chart-3: #D97706; /* warning-500 */
+  --chart-4: #64B5F6; /* feather-300 */
+  --chart-5: #2196F3; /* feather-500 */
+  
+  /* Sidebar */
+  --sidebar: #FFFFFF; /* paper-0 */
+  --sidebar-foreground: #0A0A0A; /* ink-900 */
+  --sidebar-primary: #1E88E5; /* feather-600 */
+  --sidebar-primary-foreground: #FFFFFF; /* paper-0 */
+  --sidebar-accent: #E9F2FF; /* ice-100 */
+  --sidebar-accent-foreground: #1E88E5; /* feather-600 */
+  --sidebar-border: #D6D6D6; /* silver-200 */
+  --sidebar-ring: #2196F3; /* feather-500 */
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* PayNote Theme - Dark Mode */
+  --background: #0A0A0A; /* ink-900 */
+  --foreground: #FFFFFF; /* paper-0 */
+  
+  /* Card */
+  --card: #1a1a1a; /* slightly lighter than background */
+  --card-foreground: #FFFFFF; /* paper-0 */
+  
+  /* Popover */
+  --popover: #1a1a1a;
+  --popover-foreground: #FFFFFF; /* paper-0 */
+  
+  /* Primary */
+  --primary: #64B5F6; /* feather-300 - lighter for dark mode */
+  --primary-foreground: #0A0A0A; /* ink-900 */
+  
+  /* Secondary */
+  --secondary: #1E293B; /* darker ice */
+  --secondary-foreground: #FFFFFF; /* paper-0 */
+  
+  /* Muted */
+  --muted: #1E293B;
+  --muted-foreground: #94a3b8; /* lighter graphite */
+  
+  /* Accent */
+  --accent: #1E293B;
+  --accent-foreground: #64B5F6; /* feather-300 */
+  
+  /* Destructive */
+  --destructive: #ef4444; /* lighter danger for dark mode */
+  
+  /* Border & Input */
+  --border: #334155;
+  --input: #334155;
+  
+  /* Ring */
+  --ring: #64B5F6; /* feather-300 */
+  
+  /* Chart colors - same as light mode */
+  --chart-1: #64B5F6; /* feather-300 */
+  --chart-2: #22c55e; /* lighter success */
+  --chart-3: #f59e0b; /* lighter warning */
+  --chart-4: #2196F3; /* feather-500 */
+  --chart-5: #1E88E5; /* feather-600 */
+  
+  /* Sidebar */
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #64B5F6; /* feather-300 */
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #64B5F6;
+  --sidebar-border: #334155;
+  --sidebar-ring: #64B5F6;
 }
 
 @layer base {

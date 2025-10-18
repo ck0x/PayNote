@@ -13,7 +13,7 @@ export default function SidebarToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="lg:hidden"
+      className="lg:hidden text-feather-600 hover:text-feather-500 hover:bg-ice-100 transition-all duration-base"
       onClick={() => setIsShowSidebar(true)}
       aria-label="Open sidebar"
     >

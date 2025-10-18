@@ -43,11 +43,11 @@ function OAuthButton({ provider, label, icon }: OAuthButtonProps) {
       disabled={isLoading}
       variant="outline"
       size="lg"
-      className="h-14 w-14 p-0 rounded-xl hover:scale-105 transition-transform"
+      className="h-14 w-14 p-0 rounded-xl border-2 border-feather-600/30 hover:border-feather-600 hover:bg-feather-600 hover:scale-105 transition-all duration-base ease-brand shadow-sm hover:shadow-md [&_svg]:hover:brightness-0 [&_svg]:hover:invert"
       title={label}
     >
       {isLoading ? (
-        <div className="h-5 w-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+        <div className="h-5 w-5 border-2 border-feather-600/30 border-t-feather-600 rounded-full animate-spin" />
       ) : (
         icon
       )}

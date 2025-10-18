@@ -18,7 +18,7 @@ export default function SidebarOverlay() {
       tabIndex={-1}
       aria-hidden
       className={cn(
-        'fixed top-0 left-0 w-full h-full bg-black/50 transition-opacity z-40',
+        'fixed top-0 left-0 w-full h-full bg-ink-900/50 backdrop-blur-sm transition-opacity duration-base z-40',
         isShowSidebar ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}
       onClick={hideSidebar}

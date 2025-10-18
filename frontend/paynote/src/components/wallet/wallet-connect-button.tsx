@@ -28,7 +28,7 @@ export function WalletConnectButton() {
   }
 
   return (
-    <Button onClick={login} variant="default">
+    <Button onClick={login} variant="default" className="background- font-medium size-xl px-6 py-3 rounded-lg">
       Sign In
     </Button>
   );
