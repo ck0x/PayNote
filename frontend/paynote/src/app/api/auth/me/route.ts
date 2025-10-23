@@ -2,89 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Account } from "@/types/interfaces/Account";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
+import type { Email } from "@/types/primitives/Email";
+import { PrivyConfigurationError, PrivyVerificationError, verifyPrivyToken } from "../_lib/privy";
+import { findAccountByPrivyId, listOrganizationsForAccount, listWalletsForAccount, saveAccount } from "../_lib/store";
+import { createProblemDetail, extractBearerToken } from "../_lib/utils";
 
-/**
- * Current User Response
- */
 interface MeResponse {
   account: Account;
   organizations: Organization[];
   wallets: Wallet[];
 }
 
-/**
- * GET /api/auth/me
- * Returns current authenticated user's account and associated data
- */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Verify Privy JWT token from Authorization header
-    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
+    const token = extractBearerToken(request);
+    const { claims, user } = await verifyPrivyToken(token);
+    const privyUserId = claims.userId;
 
-    if (!token) {
+    const existingAccount = findAccountByPrivyId(privyUserId);
+
+    if (!existingAccount) {
       return NextResponse.json(
-        {
-          type: "about:blank",
-          title: "Authentication Required",
-          status: 401,
-          detail: "Missing authorization token",
-        },
-        { status: 401 }
-      );
-    }
-
-    // TODO: Verify and decode Privy JWT
-    // const privyUser = await verifyPrivyToken(token);
-    // const privyUserId = privyUser.userId;
-
-    // Mock: Extract Privy user ID from token (replace with actual verification)
-    const privyUserId = "mock-privy-user-id";
-
-    // TODO: Fetch account from database by Privy user ID
-    // const account = await db.accounts.findByPrivyId(privyUserId);
-
-    if (!privyUserId) {
-      return NextResponse.json(
-        {
-          type: "about:blank",
-          title: "Not Found",
-          status: 404,
-          detail: "Account not found",
-        },
+        createProblemDetail(404, "Account not found", "No PayNote account is linked to this Privy user."),
         { status: 404 }
       );
     }
 
-    // Mock account data (replace with actual DB query)
-    const accountId = crypto.randomUUID();
-    const orgId = crypto.randomUUID();
+    const account: Account = { ...existingAccount };
+    let shouldPersist = false;
 
-    const account: Account = {
-      accountId,
-      orgId,
-      email: "user@example.com",
-      displayName: "Test User",
-      role: "Owner",
-      defaultWalletId: null,
-    };
+    const privyEmail = user?.email?.address as Email | undefined;
+    if (privyEmail && privyEmail !== existingAccount.email) {
+      account.email = privyEmail;
+      shouldPersist = true;
+    }
 
-    // TODO: Fetch organizations where user is a member
-    // const organizations = await db.organizations.findByAccountId(accountId);
+    if (shouldPersist) {
+      saveAccount(account, privyUserId);
+    }
 
-    const organizations: Organization[] = [
-      {
-        orgId,
-        name: "My Organization",
-        slug: "my-org",
-        billingPlan: "Free",
-        primaryCurrency: "USD",
-      },
-    ];
-
-    // TODO: Fetch user's wallets
-    // const wallets = await db.wallets.findByOwnerAccountId(accountId);
-
-    const wallets: Wallet[] = [];
+    const organizations = listOrganizationsForAccount(existingAccount.accountId);
+    const wallets = listWalletsForAccount(existingAccount.accountId);
 
     const response: MeResponse = {
       account,
@@ -94,14 +52,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof PrivyConfigurationError) {
+      return NextResponse.json(createProblemDetail(500, "Privy configuration error", error.message), {
+        status: 500,
+      });
+    }
+
+    if (error instanceof PrivyVerificationError) {
+      return NextResponse.json(createProblemDetail(401, "Unable to verify Privy session", error.message), {
+        status: 401,
+      });
+    }
+
     console.error("Get user error:", error);
     return NextResponse.json(
-      {
-        type: "about:blank",
-        title: "Internal Server Error",
-        status: 500,
-        detail: "Failed to fetch user data",
-      },
+      createProblemDetail(500, "Internal Server Error", "Failed to fetch user data"),
       { status: 500 }
     );
   }
