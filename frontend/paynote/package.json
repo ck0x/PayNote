@@ -13,6 +13,7 @@
     "@blockscout/app-sdk": "^0.1.2",
     "@lottiefiles/dotlottie-react": "^0.17.5",
     "@privy-io/react-auth": "^3.3.0",
+    "@privy-io/server-auth": "^1.32.5",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
