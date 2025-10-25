@@ -81,14 +81,7 @@ export default function NotFoundPage({ searchParams }: NotFoundPageProps) {
           </dl>
         )}
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/"
-            className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
-          >
-            <Home className="size-4" aria-hidden />
-            Go back home
-          </Link>
+        <div className="mt-10 flex flex-col gap-3 justify-between sm:flex-row">
           <Link
             href={origin ?? "/"}
             prefetch={false}
@@ -101,9 +94,16 @@ export default function NotFoundPage({ searchParams }: NotFoundPageProps) {
             Try again
           </Link>
           <Link
+            href="/"
+            className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+          >
+            <Home className="size-4" aria-hidden />
+            Go back home
+          </Link>
+          <Link
             href="mailto:support@paynote.xyz"
             className={cn(
-              buttonVariants({ variant: "ghost", size: "lg" }),
+              buttonVariants({ variant: "destructive", size: "lg" }),
               "w-full sm:w-auto"
             )}
           >
