@@ -6,19 +6,36 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-provider";
 import SidebarNavItem from "./sidebar-nav-item";
-import SidebarNavGroup from "./sidebar-nav-group";
 import { Button } from "@/components/ui/button";
 import {
   Home,
-  CreditCard,
-  Settings,
-  Wallet,
-  FileText,
-  BarChart3,
+  Compass,
+  Search,
   Users,
+  Tag,
+  Send,
+  Braces,
+  Settings,
   X,
 } from "lucide-react";
 import { Header } from "@/components/navigation/header";
+import OrganizationSwitcher from "@/components/navigation/organization-switcher";
+
+const overviewLinks = [
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/search", label: "Search", icon: Search },
+];
+
+const workspaceLinks = [
+  { href: "/counterparties", label: "Counterparties", icon: Users },
+  { href: "/categories", label: "Categories & Rules", icon: Tag },
+  { href: "/send", label: "Send Payment", icon: Send },
+];
+
+const resourceLinks = [
+  { href: "/developer", label: "Developer", icon: Braces },
+];
 
 export default function Sidebar({ children }: { children: ReactNode }) {
   const {
@@ -37,54 +54,82 @@ export default function Sidebar({ children }: { children: ReactNode }) {
           )}
         >
           <div className="flex h-full flex-col">
-            <div className="flex h-16 items-center justify-between border-b border-border/60 px-4">
-              <Link
-                href="/"
-                className="flex items-center text-xl font-semibold tracking-tight text-foreground"
-              >
-                <Image
-                  src="/primary-logo-default.svg"
-                  alt="PayNote"
-                  width={36}
-                  height={12}
-                  className="mr-2 block"
-                />
-                <span>PayNote</span>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="lg:hidden"
-                onClick={() => setIsShowSidebar(false)}
-                aria-label="Close sidebar"
-              >
-                <X className="size-5" />
-              </Button>
+            <div className="border-b border-border/60 px-4 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <Link
+                  href="/"
+                  className="flex items-center text-xl font-semibold tracking-tight text-foreground"
+                >
+                  <Image
+                    src="/primary-logo-default.svg"
+                    alt="PayNote"
+                    width={36}
+                    height={12}
+                    className="mr-2 block"
+                  />
+                  <span>PayNote</span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="lg:hidden"
+                  onClick={() => setIsShowSidebar(false)}
+                  aria-label="Close sidebar"
+                >
+                  <X className="size-5" />
+                </Button>
+              </div>
+
+              <OrganizationSwitcher />
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-              <SidebarNavItem href="/" icon={Home}>
-                Dashboard
-              </SidebarNavItem>
+            <nav className="flex-1 space-y-6 overflow-y-auto p-4">
+              <div className="space-y-1">
+                {overviewLinks.map((link) => (
+                  <SidebarNavItem
+                    key={link.href}
+                    href={link.href}
+                    icon={link.icon}
+                  >
+                    {link.label}
+                  </SidebarNavItem>
+                ))}
+              </div>
 
-              <SidebarNavItem href="/transactions" icon={CreditCard}>
-                Transactions
-              </SidebarNavItem>
+              <div>
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Workspace
+                </p>
+                <div className="mt-2 space-y-1">
+                  {workspaceLinks.map((link) => (
+                    <SidebarNavItem
+                      key={link.href}
+                      href={link.href}
+                      icon={link.icon}
+                    >
+                      {link.label}
+                    </SidebarNavItem>
+                  ))}
+                </div>
+              </div>
 
-              <SidebarNavGroup toggleIcon={Wallet} toggleText="Payments">
-                <SidebarNavItem href="/payments/history" icon={FileText}>
-                  Payment History
-                </SidebarNavItem>
-                <SidebarNavItem href="/payments/recurring" icon={BarChart3}>
-                  Recurring Payments
-                </SidebarNavItem>
-              </SidebarNavGroup>
-
-              <SidebarNavGroup toggleIcon={Users} toggleText="Team">
-                <SidebarNavItem href="/team/members">Members</SidebarNavItem>
-                <SidebarNavItem href="/team/roles">Roles</SidebarNavItem>
-              </SidebarNavGroup>
+              <div>
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Resources
+                </p>
+                <div className="mt-2 space-y-1">
+                  {resourceLinks.map((link) => (
+                    <SidebarNavItem
+                      key={link.href}
+                      href={link.href}
+                      icon={link.icon}
+                    >
+                      {link.label}
+                    </SidebarNavItem>
+                  ))}
+                </div>
+              </div>
             </nav>
 
             {/* Bottom section */}
