@@ -30,14 +30,14 @@ export default function Sidebar({ children }: { children: ReactNode }) {
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_1fr]">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 border-r bg-background transition-transform duration-300 lg:static lg:block",
+            "fixed inset-y-0 left-0 z-50 w-64 border-r border-border/60 bg-card/95 shadow-card transition-transform duration-300 backdrop-blur lg:static lg:block",
             isShowSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
           <div className="flex h-full flex-col">
             {/* Logo/Brand */}
-            <div className="flex h-16 items-center justify-between border-b px-4">
-              <Link href="/" className="text-xl font-semibold">
+            <div className="flex h-16 items-center justify-between border-b border-border/60 px-4">
+              <Link href="/" className="text-xl font-semibold tracking-tight text-foreground">
                 PayNote
               </Link>
               <Button

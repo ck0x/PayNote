@@ -52,8 +52,12 @@ export function WalletConnectButton() {
 
   if (!ready || isLoading) {
     return (
-      <Button disabled variant="outline">
-        Loading...
+      <Button
+        disabled
+        variant="outline"
+        className="border-dashed border-border/70 bg-muted/40 text-muted-foreground"
+      >
+        Preparing wallet...
       </Button>
     );
   }
@@ -66,11 +70,11 @@ export function WalletConnectButton() {
 
   if (authenticated && account) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 rounded-2xl border border-border/80 bg-muted/40 px-3 py-2 shadow-inset">
+        <span className="font-mono text-xs text-muted-foreground">
           {displayLabel}
         </span>
-        <Button onClick={handleLogout} variant="outline">
+        <Button onClick={handleLogout} variant="secondary" size="sm">
           Logout
         </Button>
       </div>
@@ -78,7 +82,7 @@ export function WalletConnectButton() {
   }
 
   return (
-    <Button onClick={login} variant="default">
+    <Button onClick={login} variant="default" size="lg" className="shadow-card">
       Sign In
     </Button>
   );

@@ -38,66 +38,77 @@ const formatTimestamp = (ts: string) => {
 export function TransactionTable({ items }: TransactionTableProps) {
   if (items.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
         No transactions matched your filters yet.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-inset">
       <table className="w-full text-sm">
-        <thead className="border-b text-xs uppercase text-muted-foreground">
+        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="py-2 pr-4 text-left">Hash</th>
-            <th className="py-2 pr-4 text-left">From</th>
-            <th className="py-2 pr-4 text-left">To</th>
-            <th className="py-2 pr-4 text-left">Amount</th>
-            <th className="py-2 pr-4 text-left">Category</th>
-            <th className="py-2 pr-4 text-left">Network / Time</th>
-            <th className="py-2 pr-4 text-left">Status</th>
-            <th className="py-2 text-left">Note</th>
+            <th className="py-3 pl-4 pr-4 text-left font-semibold">Hash</th>
+            <th className="py-3 pr-4 text-left font-semibold">From</th>
+            <th className="py-3 pr-4 text-left font-semibold">To</th>
+            <th className="py-3 pr-4 text-left font-semibold">Amount</th>
+            <th className="py-3 pr-4 text-left font-semibold">Category</th>
+            <th className="py-3 pr-4 text-left font-semibold">
+              Network / Time
+            </th>
+            <th className="py-3 pr-4 text-left font-semibold">Status</th>
+            <th className="py-3 pr-4 text-left font-semibold">Note</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => (
-            <tr key={item.hash} className="border-b last:border-b-0">
-              <td className="py-3 pr-4 align-top font-mono text-xs text-muted-foreground">
+            <tr
+              key={item.hash}
+              className="border-t border-border/60 odd:bg-muted/10"
+            >
+              <td className="py-4 pl-4 pr-4 align-top font-mono text-xs text-muted-foreground">
                 {truncate(item.hash)}
               </td>
-              <td className="py-3 pr-4 align-top font-mono text-xs">
+              <td className="py-4 pr-4 align-top font-mono text-xs">
                 {truncate(item.from)}
               </td>
-              <td className="py-3 pr-4 align-top font-mono text-xs">
+              <td className="py-4 pr-4 align-top font-mono text-xs">
                 {truncate(item.to)}
               </td>
-              <td className="py-3 pr-4 align-top">
-                <div className="font-medium">{item.valueEth} ETH</div>
+              <td className="py-4 pr-4 align-top">
+                <div className="font-semibold text-foreground">
+                  {item.valueEth} ETH
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {formatUsd(item.valueUsd)}
                 </div>
               </td>
-              <td className="py-3 pr-4 align-top text-xs">
-                {item.category}
+              <td className="py-4 pr-4 align-top text-xs">
+                <span className="inline-flex rounded-full bg-accent px-2 py-0.5 font-semibold text-accent-foreground">
+                  {item.category}
+                </span>
               </td>
-              <td className="py-3 pr-4 align-top text-xs">
-                <div>{item.network}</div>
+              <td className="py-4 pr-4 align-top text-xs">
+                <div className="font-medium text-foreground">
+                  {item.network}
+                </div>
                 <div className="text-muted-foreground">
                   {formatTimestamp(item.ts)}
                 </div>
               </td>
-              <td className="py-3 pr-4 align-top text-xs font-medium">
+              <td className="py-4 pr-4 align-top text-xs font-semibold">
                 <span
                   className={
                     item.status === "confirmed"
-                      ? "text-emerald-600"
-                      : "text-amber-600"
+                      ? "text-success"
+                      : "text-warning"
                   }
                 >
                   {item.status}
                 </span>
               </td>
-              <td className="py-3 align-top text-xs text-muted-foreground">
+              <td className="py-4 pr-4 align-top text-xs text-muted-foreground">
                 {item.note}
               </td>
             </tr>
