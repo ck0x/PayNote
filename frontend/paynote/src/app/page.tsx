@@ -7,11 +7,14 @@ import { TransactionTable } from "@/components/transactions/transaction-table";
 import { PublicTransactionTable } from "@/components/transactions/public-transaction-table";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/stores/provider";
-import { Category } from "@/stores/types/Category";
+import { Category as TransactionCategory } from "@/stores/types/Category";
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { aggregatesApi } from "@/api/routes/aggregates";
+import { parseEther } from "viem";
+import type { Category as CategoryDetail } from "@/types/interfaces/Category";
+import type { PayNote } from "@/types/interfaces/PayNote";
 
 interface PublicTransactionRow {
   hash: string;
@@ -38,6 +41,37 @@ interface AggregatesResponse {
   aggregatedByCategory: unknown;
   aggregatedByNetwork: unknown;
   dailySummaries: unknown;
+}
+
+const CATEGORY_COLOR_MAP: Record<
+  Exclude<TransactionCategory, TransactionCategory.All>,
+  { color: string; icon: string }
+> = {
+  [TransactionCategory.Personal]: { color: "#FDE68A", icon: "👤" },
+  [TransactionCategory.Operations]: { color: "#BFDBFE", icon: "🏢" },
+  [TransactionCategory.Payroll]: { color: "#FCA5A5", icon: "💸" },
+  [TransactionCategory.ResearchAndDevelopment]: {
+    color: "#C4B5FD",
+    icon: "🧪",
+  },
+  [TransactionCategory.Customer]: { color: "#6EE7B7", icon: "🤝" },
+};
+
+const NETWORK_CHAIN_ID_MAP: Record<string, number> = {
+  "Optimism Mainnet": 10,
+  "Optimism Sepolia": 11155420,
+  "Base Mainnet": 8453,
+  "Base Sepolia": 84532,
+};
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+function toWeiString(valueEth: string) {
+  try {
+    return parseEther(valueEth).toString();
+  } catch {
+    return "0";
+  }
 }
 
 export default observer(function Landing() {
@@ -89,7 +123,7 @@ export default observer(function Landing() {
         : `${Math.round((aggregate.confirmed / totalCount) * 100)}%`;
 
     const isFiltered =
-      transactions.categoryFilter !== Category.All ||
+      transactions.categoryFilter !== TransactionCategory.All ||
       Boolean(transactions.search.trim());
 
     return [
@@ -114,6 +148,60 @@ export default observer(function Landing() {
       },
     ];
   }, [filteredItems, transactions.categoryFilter, transactions.search]);
+
+  const topCategories = useMemo<CategoryDetail[]>(() => {
+    const counts = new Map<TransactionCategory, number>();
+
+    transactions.items.forEach((item) => {
+      if (item.category === TransactionCategory.All) return;
+      counts.set(item.category, (counts.get(item.category) || 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([category, count]) => {
+        const meta =
+          CATEGORY_COLOR_MAP[
+            category as Exclude<TransactionCategory, TransactionCategory.All>
+          ] || {
+            color: "#E5E7EB",
+            icon: "•",
+          };
+
+        return {
+          categoryId: `mock-${category}`,
+          orgId: "demo-org",
+          name: category,
+          color: meta.color,
+          icon: `${meta.icon} ${count} tx`,
+          visibility: "Private",
+        };
+      });
+  }, [transactions.items]);
+
+  const recentPayNotes = useMemo<PayNote[]>(() => {
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+
+    return transactions.items
+      .filter((item) => new Date(item.ts).getTime() >= cutoff)
+      .sort(
+        (a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()
+      )
+      .slice(0, 5)
+      .map((item) => ({
+        payNoteId: item.hash,
+        txHash: item.hash,
+        chainId: NETWORK_CHAIN_ID_MAP[item.network] ?? 0,
+        senderWalletId: item.from,
+        recipientWalletId: item.to,
+        amountWei: toWeiString(item.valueEth),
+        payReference: item.note,
+        timestamp: Math.floor(new Date(item.ts).getTime() / 1000),
+        status: item.status === "confirmed" ? "Settled" : "Pending",
+        orgId: "demo-org",
+      }));
+  }, [transactions.items]);
 
   // Fetch public aggregate data for unauthenticated users
   useEffect(() => {
@@ -224,7 +312,11 @@ export default observer(function Landing() {
       <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pb-10 sm:p-8">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-mint-wash" />
 
-        <SummarySection summaries={summaries} />
+        <SummarySection
+          summaries={summaries}
+          topCategories={topCategories}
+          recentPayNotes={recentPayNotes}
+        />
 
         <section className="rounded-3xl border border-border/80 bg-card/95 p-6 shadow-card backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
