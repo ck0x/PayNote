@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
     const token = extractBearerToken(request);
     if (!token) {
       return NextResponse.json(
-        createProblemDetail(401, "Unauthorized", "Missing authentication token"),
+        createProblemDetail(
+          401,
+          "Unauthorized",
+          "Missing authentication token"
+        ),
         { status: 401 }
       );
     }
@@ -38,7 +42,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("GET /api/orgs error:", error);
     return NextResponse.json(
-      createProblemDetail(500, "Internal Server Error", "Failed to list organizations"),
+      createProblemDetail(
+        500,
+        "Internal Server Error",
+        "Failed to list organizations"
+      ),
       { status: 500 }
     );
   }
