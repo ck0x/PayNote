@@ -1,0 +1,32 @@
+{
+  "name": "paynote-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PayNote - Smart contract registry and frontend workspace",
+  "scripts": {
+    "frontend:dev": "cd frontend/paynote && npm run dev",
+    "frontend:build": "cd frontend/paynote && npm run build",
+    "frontend:start": "cd frontend/paynote && npm start",
+    "frontend:lint": "cd frontend/paynote && npm run lint",
+    "frontend:typecheck": "cd frontend/paynote && npm run typecheck",
+    "frontend:install": "cd frontend/paynote && npm install",
+    "contracts:compile": "cd contracts && npx hardhat compile",
+    "contracts:test": "cd contracts && npx hardhat test",
+    "contracts:install": "cd contracts && npm install",
+    "install:all": "npm run contracts:install && npm run frontend:install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ck0x/PayNote.git"
+  },
+  "keywords": [
+    "web3",
+    "blockchain",
+    "ethereum",
+    "hardhat",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}
