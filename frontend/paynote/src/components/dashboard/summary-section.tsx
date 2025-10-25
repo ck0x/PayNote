@@ -1,8 +1,5 @@
 "use client";
 
-import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
-import SidebarToggle from "@/components/navigation/sidebar-toggle";
-
 interface SummarySectionProps {
   summaries: Array<{
     label: string;
@@ -16,19 +13,13 @@ export function SummarySection({ summaries }: SummarySectionProps) {
     <section className="overflow-hidden rounded-3xl border border-border/60 bg-brand-gradient shadow-card text-white dark:text-white">
       <div id="summary-section" className="flex flex-col gap-6 p-6 sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <SidebarToggle />
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
-                PayNote HQ
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white">
-                Transaction Summary
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <WalletConnectButton />
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
+              PayNote HQ
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white">
+              Transaction Summary
+            </h1>
           </div>
         </div>
 
