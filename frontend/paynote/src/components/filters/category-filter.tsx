@@ -16,12 +16,14 @@ export const CategoryFilter = observer(function CategoryFilter() {
 
   return (
     <select
-      className="border rounded-md px-2 py-1"
+      className="inline-flex h-10 items-center rounded-2xl border border-border/80 bg-secondary/80 px-4 text-sm font-semibold text-secondary-foreground shadow-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       value={transactions.categoryFilter}
       onChange={(e) => handleChange(e.target.value)}
     >
       {Object.values(Category).map((o) => (
-        <option key={o}>{o}</option>
+        <option key={o} className="bg-card text-foreground">
+          {o}
+        </option>
       ))}
     </select>
   );

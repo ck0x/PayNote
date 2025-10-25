@@ -1,64 +1,271 @@
 "use client";
 
-import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
 import { CategoryFilter } from "@/components/filters/category-filter";
-import SidebarToggle from "@/components/navigation/sidebar-toggle";
 import Sidebar from "@/components/navigation/sidebar";
+import { SummarySection } from "@/components/dashboard/summary-section";
+import { TransactionTable } from "@/components/transactions/transaction-table";
+import { PublicTransactionTable } from "@/components/transactions/public-transaction-table";
+import { Input } from "@/components/ui/input";
+import { useStore } from "@/stores/provider";
+import { Category } from "@/stores/types/Category";
 import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { aggregatesApi } from "@/api/routes/aggregates";
 
-export default function Landing() {
-  const { authenticated, ready } = usePrivy();
-  const router = useRouter();
+interface PublicTransactionRow {
+  hash: string;
+  from: string;
+  to: string;
+  status: string;
+  value: string;
+  network: string;
+  timestamp: string;
+  category: string;
+}
 
+interface AggregatedSummary {
+  totalCount: number;
+  totalUsd: number;
+  totalEth: number;
+  confirmed: number;
+  pending: number;
+}
+
+interface AggregatesResponse {
+  publicTableRows: PublicTransactionRow[];
+  aggregatedSummary: AggregatedSummary;
+  aggregatedByCategory: unknown;
+  aggregatedByNetwork: unknown;
+  dailySummaries: unknown;
+}
+
+export default observer(function Landing() {
+  const { authenticated, ready, login } = usePrivy();
+  const { transactions } = useStore();
+  const filteredItems = transactions.filteredItems;
+
+  const [publicData, setPublicData] = useState<{
+    rows: PublicTransactionRow[];
+    summary: AggregatedSummary;
+  } | null>(null);
+  const [isLoadingPublic, setIsLoadingPublic] = useState(false);
+
+  const summaries = useMemo(() => {
+    const base = {
+      totalUsd: 0,
+      totalEth: 0,
+      confirmed: 0,
+    };
+
+    const aggregate = filteredItems.reduce((acc, item) => {
+      const next = { ...acc };
+      const usd = Number(item.valueUsd);
+      const eth = Number(item.valueEth);
+
+      if (!Number.isNaN(usd)) next.totalUsd += usd;
+      if (!Number.isNaN(eth)) next.totalEth += eth;
+      if (item.status === "confirmed") next.confirmed += 1;
+
+      return next;
+    }, base);
+
+    const totalCount = filteredItems.length;
+    const usdFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+
+    const ethFormatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    const confirmationRate =
+      totalCount === 0
+        ? "—"
+        : `${Math.round((aggregate.confirmed / totalCount) * 100)}%`;
+
+    const isFiltered =
+      transactions.categoryFilter !== Category.All ||
+      Boolean(transactions.search.trim());
+
+    return [
+      {
+        label: "Filtered volume",
+        value: usdFormatter.format(aggregate.totalUsd || 0),
+        helper: `${ethFormatter.format(aggregate.totalEth || 0)} ETH`,
+      },
+      {
+        label: "Confirmation rate",
+        value: confirmationRate,
+        helper: `${aggregate.confirmed}/${totalCount || 0} confirmed`,
+      },
+      {
+        label: "Active filters",
+        value: isFiltered ? "Focused view" : "All activity",
+        helper: isFiltered
+          ? `${transactions.categoryFilter}${
+              transactions.search ? " + search" : ""
+            }`
+          : "No filters applied",
+      },
+    ];
+  }, [filteredItems, transactions.categoryFilter, transactions.search]);
+
+  // Fetch public aggregate data for unauthenticated users
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push("/auth");
+      setIsLoadingPublic(true);
+      aggregatesApi
+        .fetch()
+        .then((data) => {
+          const response = data as AggregatesResponse;
+          setPublicData({
+            rows: response.publicTableRows || [],
+            summary: response.aggregatedSummary || {
+              totalCount: 0,
+              totalUsd: 0,
+              totalEth: 0,
+              confirmed: 0,
+              pending: 0,
+            },
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to load public data:", err);
+        })
+        .finally(() => {
+          setIsLoadingPublic(false);
+        });
     }
-  }, [authenticated, ready, router]);
+  }, [authenticated, ready]);
+
+  const publicSummaries = useMemo(() => {
+    if (!publicData) return [];
+
+    const { summary } = publicData;
+    const usdFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+    const ethFormatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    const confirmationRate =
+      summary.totalCount === 0
+        ? "—"
+        : `${Math.round((summary.confirmed / summary.totalCount) * 100)}%`;
+
+    return [
+      {
+        label: "Total volume",
+        value: usdFormatter.format(summary.totalUsd || 0),
+        helper: `${ethFormatter.format(summary.totalEth || 0)} ETH`,
+      },
+      {
+        label: "Confirmation rate",
+        value: confirmationRate,
+        helper: `${summary.confirmed}/${summary.totalCount || 0} confirmed`,
+      },
+      {
+        label: "Total transactions",
+        value: String(summary.totalCount || 0),
+        helper: `${summary.pending || 0} pending`,
+      },
+    ];
+  }, [publicData]);
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-mint-wash">
+        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-4 text-sm text-muted-foreground shadow-card">
+          Loading...
+        </div>
       </div>
     );
   }
 
+  // Public dashboard for unauthenticated users
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Redirecting to sign in...</div>
-      </div>
+      <Sidebar>
+        <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pb-10 sm:p-8">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-mint-wash" />
+
+          {isLoadingPublic ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">
+                Loading public data...
+              </div>
+            </div>
+          ) : (
+            <>
+              <SummarySection summaries={publicSummaries} />
+              <PublicTransactionTable
+                items={publicData?.rows || []}
+                onSignIn={login}
+              />
+            </>
+          )}
+        </main>
+      </Sidebar>
     );
   }
 
   return (
     <Sidebar>
-      <main className="mx-auto max-w-5xl p-8 space-y-8">
-        <section className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <SidebarToggle />
-            <h1 className="text-3xl font-semibold">PayNote</h1>
+      <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pb-10 sm:p-8">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-mint-wash" />
+
+        <SummarySection summaries={summaries} />
+
+        <section className="rounded-3xl border border-border/80 bg-card/95 p-6 shadow-card backdrop-blur">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="flex flex-1 flex-wrap gap-3">
+              <CategoryFilter />
+              <div className="min-w-[240px] flex-1">
+                <Input
+                  placeholder="Search hash, sender, or recipient"
+                  value={transactions.search}
+                  onChange={(event) =>
+                    transactions.setSearch(event.target.value)
+                  }
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <WalletConnectButton />
-          </div>
+
+          {transactions.error ? (
+            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+              {transactions.error}
+            </div>
+          ) : null}
         </section>
 
-        <section className="rounded-2xl border p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <CategoryFilter />
-            {/* search input, date range, etc. */}
+        <section className="rounded-3xl border border-border/80 bg-card/95 p-6 shadow-card">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Transactions
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Filtered total: {filteredItems.length}
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-accent/60 px-3 py-1 text-xs font-semibold text-accent-foreground">
+              Live data mock
+            </span>
           </div>
-          {/* Placeholder: list of public on-chain transactions */}
-          <div className="text-sm text-muted-foreground">
-            Public on-chain transactions will appear here. (Envio integration
-            coming.)
-          </div>
+          <TransactionTable items={filteredItems} />
         </section>
       </main>
     </Sidebar>
   );
-}
+});

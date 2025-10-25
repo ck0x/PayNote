@@ -23,9 +23,8 @@ function OAuthButton({ provider, label, icon }: OAuthButtonProps) {
   const { initOAuth } = useLoginWithOAuth({
     onComplete: async ({ user, isNewUser }) => {
       console.log(`User logged in successfully with ${provider}`, user);
-      
+
       try {
-        // Register or login the user with our backend
         await registerOrLogin({
           privyUserId: user.id,
           email: user.email?.address,
@@ -35,13 +34,11 @@ function OAuthButton({ provider, label, icon }: OAuthButtonProps) {
 
         toast({
           title: isNewUser ? "Welcome!" : "Welcome back!",
-          description: isNewUser 
-            ? "Your account has been created successfully." 
+          description: isNewUser
+            ? "Your account has been created successfully."
             : "You've been logged in successfully.",
         });
-
-        // Redirect to dashboard
-        router.push("/home");
+        router.push("/");
       } catch (error) {
         console.error("Failed to sync user with backend:", error);
         toast({
@@ -141,4 +138,3 @@ export function OAuthLogin() {
     </div>
   );
 }
-

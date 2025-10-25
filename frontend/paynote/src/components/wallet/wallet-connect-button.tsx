@@ -13,32 +13,33 @@ export function WalletConnectButton() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Handle post-authentication registration
   useEffect(() => {
     if (authenticated && user && !account && !isLoading) {
       // User authenticated via Privy but not registered in our system
       const walletAddress = user.wallet?.address;
       const email = user.email?.address;
-      
+
       registerOrLogin({
         privyUserId: user.id,
         email,
         walletAddress,
-        authMethod: walletAddress ? 'wallet' : 'email',
-      }).then(() => {
-        toast({
-          title: "Welcome!",
-          description: "You've been signed in successfully.",
+        authMethod: walletAddress ? "wallet" : "email",
+      })
+        .then(() => {
+          toast({
+            title: "Welcome!",
+            description: "You've been signed in successfully.",
+          });
+          router.push("/");
+        })
+        .catch((error) => {
+          console.error("Failed to register/login:", error);
+          toast({
+            title: "Authentication Error",
+            description: "Failed to complete sign in. Please try again.",
+            variant: "destructive",
+          });
         });
-        router.push("/home");
-      }).catch((error) => {
-        console.error("Failed to register/login:", error);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to complete sign in. Please try again.",
-          variant: "destructive",
-        });
-      });
     }
   }, [authenticated, user, account, isLoading, registerOrLogin, router, toast]);
 
@@ -52,8 +53,12 @@ export function WalletConnectButton() {
 
   if (!ready || isLoading) {
     return (
-      <Button disabled variant="outline">
-        Loading...
+      <Button
+        disabled
+        variant="outline"
+        className="border-dashed border-border/70 bg-muted/40 text-muted-foreground"
+      >
+        Preparing wallet...
       </Button>
     );
   }
@@ -66,11 +71,11 @@ export function WalletConnectButton() {
 
   if (authenticated && account) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 rounded-2xl border border-border/80 bg-muted/40 px-3 py-2 shadow-inset">
+        <span className="font-mono text-xs text-muted-foreground">
           {displayLabel}
         </span>
-        <Button onClick={handleLogout} variant="outline">
+        <Button onClick={handleLogout} variant="secondary" size="sm">
           Logout
         </Button>
       </div>
@@ -78,7 +83,7 @@ export function WalletConnectButton() {
   }
 
   return (
-    <Button onClick={login} variant="default">
+    <Button onClick={login} variant="default" size="lg" className="shadow-card">
       Sign In
     </Button>
   );

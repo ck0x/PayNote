@@ -2,11 +2,11 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-provider";
 import SidebarNavItem from "./sidebar-nav-item";
 import SidebarNavGroup from "./sidebar-nav-group";
-import SidebarOverlay from "./sidebar-overlay";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -18,6 +18,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { Header } from "@/components/navigation/header";
 
 export default function Sidebar({ children }: { children: ReactNode }) {
   const {
@@ -26,19 +27,29 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <SidebarOverlay />
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_1fr]">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 border-r bg-background transition-transform duration-300 lg:static lg:block",
-            isShowSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+            "fixed inset-y-0 left-0 z-50 w-64 border-r border-border/60 bg-card/95 shadow-card transition-transform duration-300 backdrop-blur lg:static lg:block",
+            isShowSidebar
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
           )}
         >
           <div className="flex h-full flex-col">
-            {/* Logo/Brand */}
-            <div className="flex h-16 items-center justify-between border-b px-4">
-              <Link href="/" className="text-xl font-semibold">
-                PayNote
+            <div className="flex h-16 items-center justify-between border-b border-border/60 px-4">
+              <Link
+                href="/"
+                className="flex items-center text-xl font-semibold tracking-tight text-foreground"
+              >
+                <Image
+                  src="/primary-logo-default.svg"
+                  alt="PayNote"
+                  width={36}
+                  height={12}
+                  className="mr-2 block"
+                />
+                <span>PayNote</span>
               </Link>
               <Button
                 variant="ghost"
@@ -71,12 +82,8 @@ export default function Sidebar({ children }: { children: ReactNode }) {
               </SidebarNavGroup>
 
               <SidebarNavGroup toggleIcon={Users} toggleText="Team">
-                <SidebarNavItem href="/team/members">
-                  Members
-                </SidebarNavItem>
-                <SidebarNavItem href="/team/roles">
-                  Roles
-                </SidebarNavItem>
+                <SidebarNavItem href="/team/members">Members</SidebarNavItem>
+                <SidebarNavItem href="/team/roles">Roles</SidebarNavItem>
               </SidebarNavGroup>
             </nav>
 
@@ -90,7 +97,10 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main content */}
-        <main className="flex flex-col">{children}</main>
+        <main className="flex flex-1 flex-col">
+          <Header />
+          <div className="flex-1">{children}</div>
+        </main>
       </div>
     </>
   );
