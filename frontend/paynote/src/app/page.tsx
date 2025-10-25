@@ -4,13 +4,18 @@ import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
 import { CategoryFilter } from "@/components/filters/category-filter";
 import SidebarToggle from "@/components/navigation/sidebar-toggle";
 import Sidebar from "@/components/navigation/sidebar";
+import { TransactionTable } from "@/components/transactions/transaction-table";
+import { Input } from "@/components/ui/input";
+import { useStore } from "@/stores/provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { observer } from "mobx-react-lite";
 
-export default function Landing() {
+export default observer(function Landing() {
   const { authenticated, ready } = usePrivy();
   const router = useRouter();
+  const { transactions } = useStore();
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -47,18 +52,27 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="rounded-2xl border p-6">
-          <div className="flex items-center gap-4 mb-4">
+        <section className="rounded-2xl border p-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
             <CategoryFilter />
-            {/* search input, date range, etc. */}
+            <div className="w-full min-w-[240px] flex-1 md:max-w-sm">
+              <Input
+                placeholder="Search hash, sender, or recipient"
+                value={transactions.search}
+                onChange={(event) => transactions.setSearch(event.target.value)}
+              />
+            </div>
           </div>
-          {/* Placeholder: list of public on-chain transactions */}
-          <div className="text-sm text-muted-foreground">
-            Public on-chain transactions will appear here. (Envio integration
-            coming.)
-          </div>
+
+          {transactions.error ? (
+            <div className="text-sm text-destructive">
+              {transactions.error}
+            </div>
+          ) : null}
+
+          <TransactionTable items={transactions.filteredItems} />
         </section>
       </main>
     </Sidebar>
   );
-}
+});
