@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { Menu } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useSidebar } from './sidebar-provider'
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "./sidebar-provider";
 
 export default function SidebarToggle() {
   const {
     showSidebarState: [, setIsShowSidebar],
-  } = useSidebar()
+  } = useSidebar();
 
   return (
     <Button
-      variant="ghost"
+      variant="default"
       size="icon"
       className="lg:hidden"
       onClick={() => setIsShowSidebar(true)}
@@ -19,5 +19,5 @@ export default function SidebarToggle() {
     >
       <Menu className="size-5" />
     </Button>
-  )
+  );
 }
