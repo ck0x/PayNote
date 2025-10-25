@@ -7,6 +7,7 @@ import SidebarProvider from "@/components/navigation/sidebar-provider";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { AuthProvider } from "@/context/auth-context";
 import { ToastProvider } from "@/components/ui/toast";
+import { OrganizationProvider } from "./organization-context";
 
 const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID!;
 const privyClientId = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID!;
@@ -35,7 +36,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <Web3Provider>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
               <StoreProvider>
-                <SidebarProvider>{children}</SidebarProvider>
+                <OrganizationProvider>
+                  <SidebarProvider>{children}</SidebarProvider>
+                </OrganizationProvider>
               </StoreProvider>
             </ThemeProvider>
           </Web3Provider>

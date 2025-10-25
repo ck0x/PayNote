@@ -1,45 +1,67 @@
 "use client";
 
+import { DashboardHeaderCard } from "@/components/ui/home/dashboard-header-card";
+import { DashboardKpiCard } from "@/components/ui/home/dashboard-kpi-card";
+import { RecentPayNotesCard } from "@/components/ui/home/recent-paynotes-card";
+import { TopCategoriesCard } from "@/components/ui/home/top-categories-card";
+import type { PayNote } from "@/types/interfaces/PayNote";
+import type { Category } from "@/types/interfaces/Category";
+
 interface SummarySectionProps {
   summaries: Array<{
     label: string;
     value: string;
     helper: string;
   }>;
+  headerTitle?: string;
+  headerDescription?: string;
+  eyebrow?: string;
+  topCategories?: Category[];
+  recentPayNotes?: PayNote[];
 }
 
-export function SummarySection({ summaries }: SummarySectionProps) {
+export function SummarySection({
+  summaries,
+  headerTitle = "Transaction Summary",
+  headerDescription = "Organization overview and analytics",
+  eyebrow = "PayNote HQ",
+  topCategories = [],
+  recentPayNotes = [],
+}: SummarySectionProps) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-border/60 bg-brand-gradient shadow-card text-white dark:text-white">
-      <div id="summary-section" className="flex flex-col gap-6 p-6 sm:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
-              PayNote HQ
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white">
-              Transaction Summary
-            </h1>
-          </div>
-        </div>
+    <section
+      id="summary-section"
+      className="overflow-hidden rounded-3xl border border-border/60 bg-brand-gradient shadow-card text-black dark:text-white"
+    >
+      <div className="flex flex-col gap-6 p-6 sm:p-8">
+        <DashboardHeaderCard
+          title={headerTitle}
+          description={headerDescription}
+          eyebrow={eyebrow}
+          className="border-white/20 bg-transparent p-0 text-black shadow-none dark:text-white [&>h1]:text-black [&>p]:text-black/80 dark:[&>h1]:text-white dark:[&>p]:text-white/80"
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {summaries.map((summary) => (
-            <div
+            <DashboardKpiCard
               key={summary.label}
-              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-inset backdrop-blur"
-            >
-              <p className="text-xs uppercase tracking-wide text-black/70 dark:text-white/70">
-                {summary.label}
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-black dark:text-white">
-                {summary.value}
-              </p>
-              <p className="text-sm text-black/80 dark:text-white/80">
-                {summary.helper}
-              </p>
-            </div>
+              label={summary.label}
+              value={summary.value}
+              helper={summary.helper}
+              className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white [&_h3]:text-black/70 dark:[&_h3]:text-white/80 [&_p.text-3xl]:text-black dark:[&_p.text-3xl]:text-white dark:[&_p.text-muted-foreground]:text-white/80"
+            />
           ))}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <TopCategoriesCard
+            categories={topCategories}
+            className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white [&_h2]:text-black dark:[&_h2]:text-white dark:[&_p.text-muted-foreground]:text-white/80"
+          />
+          <RecentPayNotesCard
+            payNotes={recentPayNotes}
+            className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white dark:[&_p.text-muted-foreground]:text-white/80"
+          />
         </div>
       </div>
     </section>

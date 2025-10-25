@@ -2,10 +2,7 @@ import { http } from "../lib/http";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Account } from "@/types/interfaces/Account";
 import type { UUID } from "@/types/primitives/UUID";
-import type {
-  OrganizationCreate,
-  OrganizationUpdate,
-} from "../types/requests";
+import type { OrganizationCreate, OrganizationUpdate } from "../types/requests";
 
 /**
  * Organizations API
@@ -22,8 +19,7 @@ export const organizationsApi = {
    * Create a new organization
    * POST /orgs
    */
-  create: (data: OrganizationCreate) =>
-    http.post<Organization>("/orgs", data),
+  create: (data: OrganizationCreate) => http.post<Organization>("/orgs", data),
 
   /**
    * Get organization by ID
@@ -48,6 +44,5 @@ export const organizationsApi = {
    * List accounts (members) in organization
    * GET /orgs/{orgId}/accounts
    */
-  listAccounts: (orgId: UUID) =>
-    http.get<Account[]>(`/orgs/${orgId}/accounts`),
+  listAccounts: (orgId: UUID) => http.get<Account[]>(`/orgs/${orgId}/accounts`),
 };

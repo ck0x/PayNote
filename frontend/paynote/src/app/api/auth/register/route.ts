@@ -3,7 +3,11 @@ import type { Account } from "@/types/interfaces/Account";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
 import type { Email } from "@/types/primitives/Email";
-import { PrivyConfigurationError, PrivyVerificationError, verifyPrivyToken } from "../_lib/privy";
+import {
+  PrivyConfigurationError,
+  PrivyVerificationError,
+  verifyPrivyToken,
+} from "../_lib/privy";
 import {
   findAccountByPrivyId,
   findWalletByAddress,
@@ -15,7 +19,11 @@ import {
   saveWallet,
   updateAccountDefaultWallet,
 } from "../_lib/store";
-import { createProblemDetail, extractBearerToken, slugify } from "../_lib/utils";
+import {
+  createProblemDetail,
+  extractBearerToken,
+  slugify,
+} from "../_lib/utils";
 
 interface RegisterRequest {
   email?: string;
@@ -35,7 +43,10 @@ interface RegisterResponse {
 const DEFAULT_BILLING_PLAN: Organization["billingPlan"] = "Free";
 const DEFAULT_CURRENCY: Organization["primaryCurrency"] = "USD";
 
-function resolveEmail(inputEmail: string | undefined, fallbackEmail: Email | undefined) {
+function resolveEmail(
+  inputEmail: string | undefined,
+  fallbackEmail: Email | undefined
+) {
   if (inputEmail?.length) {
     return inputEmail;
   }
@@ -47,7 +58,11 @@ function resolveEmail(inputEmail: string | undefined, fallbackEmail: Email | und
   return "" as Email;
 }
 
-function resolveDisplayName(displayName: string | undefined, email: Email, walletAddress?: string) {
+function resolveDisplayName(
+  displayName: string | undefined,
+  email: Email,
+  walletAddress?: string
+) {
   if (displayName?.length) {
     return displayName;
   }
@@ -64,7 +79,9 @@ function resolveDisplayName(displayName: string | undefined, email: Email, walle
 }
 
 function buildOrganizationName(baseName: string) {
-  return baseName.endsWith("s") ? `${baseName}' Workspace` : `${baseName}'s Workspace`;
+  return baseName.endsWith("s")
+    ? `${baseName}' Workspace`
+    : `${baseName}'s Workspace`;
 }
 
 function createOrganization(displayName: string, orgId: string) {
@@ -93,7 +110,10 @@ export async function POST(request: NextRequest) {
       // Ignore JSON parse errors and treat as empty body
     }
 
-    const candidateEmail = resolveEmail(body.email, user?.email?.address as Email | undefined);
+    const candidateEmail = resolveEmail(
+      body.email,
+      user?.email?.address as Email | undefined
+    );
     const candidateDisplayName = resolveDisplayName(
       body.displayName,
       candidateEmail,
@@ -120,7 +140,10 @@ export async function POST(request: NextRequest) {
         const normalizedAddress = walletAddress.toLowerCase();
         const globalWallet = findWalletByAddress(walletAddress);
 
-        if (globalWallet && globalWallet.ownerAccountId !== updatedAccount.accountId) {
+        if (
+          globalWallet &&
+          globalWallet.ownerAccountId !== updatedAccount.accountId
+        ) {
           return NextResponse.json(
             createProblemDetail(
               409,
@@ -132,7 +155,9 @@ export async function POST(request: NextRequest) {
         }
 
         const existingWallets = listWalletsForAccount(updatedAccount.accountId);
-        wallet = existingWallets.find((entry) => entry.address.toLowerCase() === normalizedAddress);
+        wallet = existingWallets.find(
+          (entry) => entry.address.toLowerCase() === normalizedAddress
+        );
 
         if (!wallet) {
           wallet = {
@@ -149,7 +174,8 @@ export async function POST(request: NextRequest) {
         updatedAccount.defaultWalletId = wallet.walletId;
       } else if (existingAccount.defaultWalletId) {
         wallet = findWalletById(existingAccount.defaultWalletId) ?? undefined;
-        updatedAccount.defaultWalletId = wallet?.walletId ?? existingAccount.defaultWalletId;
+        updatedAccount.defaultWalletId =
+          wallet?.walletId ?? existingAccount.defaultWalletId;
       } else {
         wallet = undefined;
         updatedAccount.defaultWalletId = null;
@@ -160,16 +186,21 @@ export async function POST(request: NextRequest) {
 
       let organizations = listOrganizationsForAccount(account.accountId);
       if (!organizations.length) {
-        organization = createOrganization(account.displayName, existingAccount.orgId);
+        organization = createOrganization(
+          account.displayName,
+          existingAccount.orgId
+        );
         saveOrganization(organization, account.accountId);
         organizations = listOrganizationsForAccount(account.accountId);
       } else {
         organization = organizations[0]!;
       }
 
-      let wallets = listWalletsForAccount(account.accountId);
+      const wallets = listWalletsForAccount(account.accountId);
       if (!wallet && account.defaultWalletId) {
-        wallet = wallets.find((entry) => entry.walletId === account.defaultWalletId);
+        wallet = wallets.find(
+          (entry) => entry.walletId === account.defaultWalletId
+        );
       }
 
       return NextResponse.json({
@@ -250,24 +281,35 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof PrivyConfigurationError) {
-      return NextResponse.json(createProblemDetail(500, "Privy configuration error", error.message), {
-        status: 500,
-      });
+      return NextResponse.json(
+        createProblemDetail(500, "Privy configuration error", error.message),
+        {
+          status: 500,
+        }
+      );
     }
 
     if (error instanceof PrivyVerificationError) {
-      return NextResponse.json(createProblemDetail(401, "Unable to verify Privy session", error.message), {
-        status: 401,
-      });
+      return NextResponse.json(
+        createProblemDetail(
+          401,
+          "Unable to verify Privy session",
+          error.message
+        ),
+        {
+          status: 401,
+        }
+      );
     }
 
     console.error("Registration error:", error);
     return NextResponse.json(
-      createProblemDetail(500, "Internal Server Error", "Failed to register user"),
+      createProblemDetail(
+        500,
+        "Internal Server Error",
+        "Failed to register user"
+      ),
       { status: 500 }
     );
   }
 }
-
-
-

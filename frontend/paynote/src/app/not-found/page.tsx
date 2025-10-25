@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 type PageSearchParams = Record<string, string | string[] | undefined>;
 
 type NotFoundPageProps = {
-  searchParams?: PageSearchParams;
+  searchParams?: Promise<PageSearchParams>;
 };
 
 const FALLBACK = {
@@ -33,25 +33,29 @@ function getParamOrFallback(
   return getParam(params, key) ?? FALLBACK[key];
 }
 
-export function generateMetadata({
+export async function generateMetadata({
   searchParams,
-}: NotFoundPageProps): Metadata {
-  const code = getParamOrFallback(searchParams, "code");
-  const title = getParamOrFallback(searchParams, "title");
+}: NotFoundPageProps): Promise<Metadata> {
+  const resolvedParams = await searchParams;
+  const code = getParamOrFallback(resolvedParams, "code");
+  const title = getParamOrFallback(resolvedParams, "title");
 
   return {
     title: `${code} · ${title} | PayNote`,
-    description: getParamOrFallback(searchParams, "message"),
+    description: getParamOrFallback(resolvedParams, "message"),
   };
 }
 
-export default function NotFoundPage({ searchParams }: NotFoundPageProps) {
-  const code = getParamOrFallback(searchParams, "code");
-  const title = getParamOrFallback(searchParams, "title");
-  const message = getParamOrFallback(searchParams, "message");
-  const hint = getParam(searchParams, "hint");
-  const traceId = getParam(searchParams, "traceId");
-  const origin = getParam(searchParams, "from");
+export default async function NotFoundPage({
+  searchParams,
+}: NotFoundPageProps) {
+  const resolvedParams = await searchParams;
+  const code = getParamOrFallback(resolvedParams, "code");
+  const title = getParamOrFallback(resolvedParams, "title");
+  const message = getParamOrFallback(resolvedParams, "message");
+  const hint = getParam(resolvedParams, "hint");
+  const traceId = getParam(resolvedParams, "traceId");
+  const origin = getParam(resolvedParams, "from");
 
   const metadata = [
     traceId ? { label: "Trace ID", value: traceId } : null,
