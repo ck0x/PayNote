@@ -26,22 +26,29 @@ function getParam(params: PageSearchParams | undefined, key: string) {
   return value;
 }
 
+function getParamOrFallback(
+  params: PageSearchParams | undefined,
+  key: keyof typeof FALLBACK
+): string {
+  return getParam(params, key) ?? FALLBACK[key];
+}
+
 export function generateMetadata({
   searchParams,
 }: NotFoundPageProps): Metadata {
-  const code = getParam(searchParams, "code") ?? FALLBACK.code;
-  const title = getParam(searchParams, "title") ?? FALLBACK.title;
+  const code = getParamOrFallback(searchParams, "code");
+  const title = getParamOrFallback(searchParams, "title");
 
   return {
     title: `${code} · ${title} | PayNote`,
-    description: getParam(searchParams, "message") ?? FALLBACK.message,
+    description: getParamOrFallback(searchParams, "message"),
   };
 }
 
 export default function NotFoundPage({ searchParams }: NotFoundPageProps) {
-  const code = getParam(searchParams, "code") ?? FALLBACK.code;
-  const title = getParam(searchParams, "title") ?? FALLBACK.title;
-  const message = getParam(searchParams, "message") ?? FALLBACK.message;
+  const code = getParamOrFallback(searchParams, "code");
+  const title = getParamOrFallback(searchParams, "title");
+  const message = getParamOrFallback(searchParams, "message");
   const hint = getParam(searchParams, "hint");
   const traceId = getParam(searchParams, "traceId");
   const origin = getParam(searchParams, "from");
