@@ -85,7 +85,9 @@ export default function WalletDetailPage({
         <h2 className="text-xl font-semibold mb-4">Sent Transactions</h2>
         <div className="space-y-3">
           {sentPayNotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sent transactions</p>
+            <p className="text-sm text-muted-foreground">
+              No sent transactions
+            </p>
           ) : (
             sentPayNotes.map((note) => (
               <div
