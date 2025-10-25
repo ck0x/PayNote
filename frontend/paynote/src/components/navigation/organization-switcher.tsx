@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronsUpDown, Check, Plus, Loader2 } from "lucide-react";
+import { ChevronsUpDown, Check, Loader2, Plus } from "lucide-react";
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/api";
-import type { Organization } from "@/types/interfaces/Organization";
 import type { UUID } from "@/types/primitives/UUID";
 import { useOrganization } from "@/context/organization-context";
 import { cn } from "@/lib/utils";
+import { CreateOrganizationModal } from "@/components/organization/create-organization-modal";
 
 type FetchState =
   | { status: "idle" }
@@ -26,45 +24,42 @@ type FetchState =
   | { status: "success" };
 
 export default function OrganizationSwitcher() {
-  const router = useRouter();
-  const { currentOrg, switchOrganization } = useOrganization();
+  const {
+    currentOrg,
+    switchOrganization,
+    organizations: contextOrganizations,
+    refreshOrganizations,
+  } = useOrganization();
   const { authenticated, login } = usePrivy();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>({ status: "idle" });
   const [activeOrgId, setActiveOrgId] = useState<UUID | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  // Use organizations from context instead of local state
+  const organizations = contextOrganizations;
 
-    if (!authenticated) {
-      setOrganizations([]);
+  const handleOrganizationCreated = async () => {
+    // Refresh the organizations list from context
+    try {
+      await refreshOrganizations();
       setFetchState({ status: "success" });
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    setFetchState({ status: "loading" });
-
-    api.organizations
-      .list()
-      .then((data) => {
-        if (!isMounted) return;
-        setOrganizations(Array.isArray(data) ? data : []);
-        setFetchState({ status: "success" });
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        const message =
+    } catch (error) {
+      setFetchState({
+        status: "error",
+        message:
           error instanceof Error
             ? error.message
-            : "Failed to load organizations";
-        setFetchState({ status: "error", message });
+            : "Failed to refresh organizations",
       });
+    }
+  };
 
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    if (!authenticated) {
+      setFetchState({ status: "success" });
+      return;
+    }
+
+    setFetchState({ status: "success" });
   }, [authenticated]);
 
   useEffect(() => {
@@ -141,30 +136,16 @@ export default function OrganizationSwitcher() {
         <p className="text-xs text-destructive">
           {fetchState.message || "Unable to load organizations"}
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-center"
-          onClick={() => router.push("/settings?screen=organization")}
-        >
-          <Plus className="mr-2 size-4" />
-          Create organization
-        </Button>
+        <CreateOrganizationModal onSuccess={handleOrganizationCreated} />
       </div>
     );
   }
 
   if (fetchState.status !== "loading" && !organizations.length) {
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        className="mt-4 w-full justify-center"
-        onClick={() => router.push("/settings?screen=organization")}
-      >
-        <Plus className="mr-2 size-4" />
-        Create organization
-      </Button>
+      <div className="mt-4">
+        <CreateOrganizationModal onSuccess={handleOrganizationCreated} />
+      </div>
     );
   }
 
@@ -203,12 +184,15 @@ export default function OrganizationSwitcher() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => router.push("/settings?screen=organization")}
-        >
-          <Plus className="mr-2 size-4" />
-          Create organization
-        </DropdownMenuItem>
+        <CreateOrganizationModal
+          onSuccess={handleOrganizationCreated}
+          trigger={
+            <button className="flex w-full items-center px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+              <Plus className="mr-2 size-4" />
+              Create organization
+            </button>
+          }
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
