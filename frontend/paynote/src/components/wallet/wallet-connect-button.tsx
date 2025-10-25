@@ -13,32 +13,33 @@ export function WalletConnectButton() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Handle post-authentication registration
   useEffect(() => {
     if (authenticated && user && !account && !isLoading) {
       // User authenticated via Privy but not registered in our system
       const walletAddress = user.wallet?.address;
       const email = user.email?.address;
-      
+
       registerOrLogin({
         privyUserId: user.id,
         email,
         walletAddress,
-        authMethod: walletAddress ? 'wallet' : 'email',
-      }).then(() => {
-        toast({
-          title: "Welcome!",
-          description: "You've been signed in successfully.",
+        authMethod: walletAddress ? "wallet" : "email",
+      })
+        .then(() => {
+          toast({
+            title: "Welcome!",
+            description: "You've been signed in successfully.",
+          });
+          router.push("/");
+        })
+        .catch((error) => {
+          console.error("Failed to register/login:", error);
+          toast({
+            title: "Authentication Error",
+            description: "Failed to complete sign in. Please try again.",
+            variant: "destructive",
+          });
         });
-        router.push("/home");
-      }).catch((error) => {
-        console.error("Failed to register/login:", error);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to complete sign in. Please try again.",
-          variant: "destructive",
-        });
-      });
     }
   }, [authenticated, user, account, isLoading, registerOrLogin, router, toast]);
 

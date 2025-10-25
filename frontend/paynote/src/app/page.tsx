@@ -4,19 +4,52 @@ import { CategoryFilter } from "@/components/filters/category-filter";
 import Sidebar from "@/components/navigation/sidebar";
 import { SummarySection } from "@/components/dashboard/summary-section";
 import { TransactionTable } from "@/components/transactions/transaction-table";
+import { PublicTransactionTable } from "@/components/transactions/public-transaction-table";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/stores/provider";
 import { Category } from "@/stores/types/Category";
 import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
+import { aggregatesApi } from "@/api/routes/aggregates";
+
+interface PublicTransactionRow {
+  hash: string;
+  from: string;
+  to: string;
+  status: string;
+  value: string;
+  network: string;
+  timestamp: string;
+  category: string;
+}
+
+interface AggregatedSummary {
+  totalCount: number;
+  totalUsd: number;
+  totalEth: number;
+  confirmed: number;
+  pending: number;
+}
+
+interface AggregatesResponse {
+  publicTableRows: PublicTransactionRow[];
+  aggregatedSummary: AggregatedSummary;
+  aggregatedByCategory: unknown;
+  aggregatedByNetwork: unknown;
+  dailySummaries: unknown;
+}
 
 export default observer(function Landing() {
-  const { authenticated, ready } = usePrivy();
-  const router = useRouter();
+  const { authenticated, ready, login } = usePrivy();
   const { transactions } = useStore();
   const filteredItems = transactions.filteredItems;
+
+  const [publicData, setPublicData] = useState<{
+    rows: PublicTransactionRow[];
+    summary: AggregatedSummary;
+  } | null>(null);
+  const [isLoadingPublic, setIsLoadingPublic] = useState(false);
 
   const summaries = useMemo(() => {
     const base = {
@@ -82,22 +115,109 @@ export default observer(function Landing() {
     ];
   }, [filteredItems, transactions.categoryFilter, transactions.search]);
 
+  // Fetch public aggregate data for unauthenticated users
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push("/auth");
+      setIsLoadingPublic(true);
+      aggregatesApi
+        .fetch()
+        .then((data) => {
+          const response = data as AggregatesResponse;
+          setPublicData({
+            rows: response.publicTableRows || [],
+            summary: response.aggregatedSummary || {
+              totalCount: 0,
+              totalUsd: 0,
+              totalEth: 0,
+              confirmed: 0,
+              pending: 0,
+            },
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to load public data:", err);
+        })
+        .finally(() => {
+          setIsLoadingPublic(false);
+        });
     }
-  }, [authenticated, ready, router]);
+  }, [authenticated, ready]);
 
-  const renderGateScreen = (message: string) => (
-    <div className="flex min-h-screen items-center justify-center bg-mint-wash">
-      <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-4 text-sm text-muted-foreground shadow-card">
-        {message}
+  const publicSummaries = useMemo(() => {
+    if (!publicData) return [];
+
+    const { summary } = publicData;
+    const usdFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+    const ethFormatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    const confirmationRate =
+      summary.totalCount === 0
+        ? "—"
+        : `${Math.round((summary.confirmed / summary.totalCount) * 100)}%`;
+
+    return [
+      {
+        label: "Total volume",
+        value: usdFormatter.format(summary.totalUsd || 0),
+        helper: `${ethFormatter.format(summary.totalEth || 0)} ETH`,
+      },
+      {
+        label: "Confirmation rate",
+        value: confirmationRate,
+        helper: `${summary.confirmed}/${summary.totalCount || 0} confirmed`,
+      },
+      {
+        label: "Total transactions",
+        value: String(summary.totalCount || 0),
+        helper: `${summary.pending || 0} pending`,
+      },
+    ];
+  }, [publicData]);
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-mint-wash">
+        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-4 text-sm text-muted-foreground shadow-card">
+          Loading...
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  if (!ready) return renderGateScreen("Loading your workspace...");
-  if (!authenticated) return renderGateScreen("Redirecting you to sign in...");
+  // Public dashboard for unauthenticated users
+  if (!authenticated) {
+    return (
+      <Sidebar>
+        <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pb-10 sm:p-8">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-mint-wash" />
+
+          {isLoadingPublic ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">
+                Loading public data...
+              </div>
+            </div>
+          ) : (
+            <>
+              <SummarySection summaries={publicSummaries} />
+              <PublicTransactionTable
+                items={publicData?.rows || []}
+                onSignIn={login}
+              />
+            </>
+          )}
+        </main>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar>
