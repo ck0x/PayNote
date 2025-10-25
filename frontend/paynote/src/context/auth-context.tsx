@@ -6,6 +6,7 @@ import type { Account } from "@/types/interfaces/Account";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
 import type { UUID } from "@/types/primitives/UUID";
+import type { ProblemDetail } from "@/types/interfaces/ProblemDetail";
 
 /**
  * Authentication state interface
@@ -23,7 +24,7 @@ interface AuthState {
  * Registration/Login payload
  */
 interface RegisterLoginPayload {
-  privyUserId: string;
+  privyUserId?: string;
   email?: string;
   walletAddress?: string;
   authMethod: string;
@@ -41,11 +42,34 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function extractProblemDetail(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") {
+    return undefined;
+  }
+
+  if (!("detail" in body)) {
+    return undefined;
+  }
+
+  const value = (body as Partial<ProblemDetail>).detail;
+  return typeof value === "string" ? value : undefined;
+}
+
+function hasAccountPayload(body: unknown): body is { account: Account } {
+  return Boolean(
+    body &&
+      typeof body === "object" &&
+      "account" in body &&
+      typeof (body as { account?: unknown }).account === "object" &&
+      (body as { account?: Account }).account !== null
+  );
+}
+
 /**
  * Auth Provider Component
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { authenticated, ready, user, logout: privyLogout } = usePrivy();
+  const { authenticated, ready, user, logout: privyLogout, getAccessToken } = usePrivy();
   
   const [state, setState] = useState<AuthState>({
     account: null,
@@ -58,36 +82,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Register or login user with backend
-   */
+  */
   const registerOrLogin = async (payload: RegisterLoginPayload) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Call backend API to register/login
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const accessToken = await getAccessToken();
 
-      if (!response.ok) {
-        throw new Error("Failed to register/login");
+      if (!accessToken) {
+        throw new Error("Missing Privy access token. Please log in again.");
       }
 
-      const data = await response.json();
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          ...payload,
+          privyUserId: payload.privyUserId ?? user?.id ?? undefined,
+        }),
+      });
+
+      const responseBody = (await response.json().catch(() => null)) as unknown;
+
+      if (!response.ok) {
+        throw new Error(extractProblemDetail(responseBody) || "Failed to register/login");
+      }
+
+      if (!hasAccountPayload(responseBody)) {
+        throw new Error("Unexpected response from server");
+      }
+
+      type RegisterApiResponse = {
+        account: Account;
+        organization?: Organization;
+        organizations?: Organization[];
+        wallet?: Wallet;
+        wallets?: Wallet[];
+      };
+
+      const registerPayload = responseBody as RegisterApiResponse;
+
+      const organizations =
+        registerPayload.organizations?.length
+          ? registerPayload.organizations
+          : registerPayload.organization
+            ? [registerPayload.organization]
+            : [];
+
+      const wallets =
+        registerPayload.wallets?.length
+          ? registerPayload.wallets
+          : registerPayload.wallet
+            ? [registerPayload.wallet]
+            : [];
 
       setState({
-        account: data.account,
-        organizations: data.organizations || [],
-        selectedOrgId: data.organizations?.[0]?.orgId || null,
-        wallets: data.wallets || [],
+        account: registerPayload.account,
+        organizations,
+        selectedOrgId: organizations[0]?.orgId || null,
+        wallets,
         isLoading: false,
         error: null,
       });
 
-      // Store selected org in localStorage
-      if (data.organizations?.[0]?.orgId) {
-        localStorage.setItem("selectedOrgId", data.organizations[0].orgId);
+      if (organizations[0]?.orgId) {
+        localStorage.setItem("selectedOrgId", organizations[0].orgId);
       }
     } catch (error) {
       console.error("Register/login error:", error);
@@ -119,23 +181,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const response = await fetch("/api/auth/me");
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch user data");
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        throw new Error("Missing Privy access token. Please log in again.");
       }
 
-      const data = await response.json();
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
-      // Restore selected org from localStorage or use first org
+      if (response.status === 404) {
+        setState({
+          account: null,
+          organizations: [],
+          selectedOrgId: null,
+          wallets: [],
+          isLoading: false,
+          error: null,
+        });
+        return;
+      }
+
+      const responseBody = (await response.json().catch(() => null)) as unknown;
+
+      if (!response.ok) {
+        throw new Error(extractProblemDetail(responseBody) || "Failed to fetch user data");
+      }
+
+      if (!hasAccountPayload(responseBody)) {
+        throw new Error("Unexpected response from server");
+      }
+
+      type MeApiResponse = {
+        account: Account;
+        organizations?: Organization[];
+        wallets?: Wallet[];
+      };
+
+      const mePayload = responseBody as MeApiResponse;
+
+      const organizations = mePayload.organizations || [];
+      const wallets = mePayload.wallets || [];
+
       const storedOrgId = localStorage.getItem("selectedOrgId");
-      const selectedOrgId = storedOrgId || data.organizations?.[0]?.orgId || null;
+      const selectedOrgId = storedOrgId || organizations[0]?.orgId || null;
 
       setState({
-        account: data.account,
-        organizations: data.organizations || [],
+        account: mePayload.account,
+        organizations,
         selectedOrgId,
-        wallets: data.wallets || [],
+        wallets,
         isLoading: false,
         error: null,
       });

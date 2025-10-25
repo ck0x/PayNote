@@ -58,11 +58,17 @@ export function WalletConnectButton() {
     );
   }
 
+  const walletAddress = user?.wallet?.address;
+  const walletLabel = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : null;
+  const displayLabel = account?.email || walletLabel || "Unknown user";
+
   if (authenticated && account) {
     return (
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">
-          {account.email || user?.wallet?.address?.slice(0, 6) + "..." + user?.wallet?.address?.slice(-4)}
+          {displayLabel}
         </span>
         <Button onClick={handleLogout} variant="outline">
           Logout

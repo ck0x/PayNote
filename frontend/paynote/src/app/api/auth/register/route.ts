@@ -26,7 +26,9 @@ interface RegisterRequest {
 interface RegisterResponse {
   account: Account;
   organization: Organization;
+  organizations: Organization[];
   wallet?: Wallet;
+  wallets: Wallet[];
   isNewUser: boolean;
 }
 
@@ -156,18 +158,26 @@ export async function POST(request: NextRequest) {
       saveAccount(updatedAccount, privyUserId);
       account = updatedAccount;
 
-      const organizations = listOrganizationsForAccount(existingAccount.accountId);
+      let organizations = listOrganizationsForAccount(account.accountId);
       if (!organizations.length) {
         organization = createOrganization(account.displayName, existingAccount.orgId);
         saveOrganization(organization, account.accountId);
+        organizations = listOrganizationsForAccount(account.accountId);
       } else {
         organization = organizations[0]!;
+      }
+
+      let wallets = listWalletsForAccount(account.accountId);
+      if (!wallet && account.defaultWalletId) {
+        wallet = wallets.find((entry) => entry.walletId === account.defaultWalletId);
       }
 
       return NextResponse.json({
         account,
         organization,
+        organizations,
         wallet,
+        wallets,
         isNewUser,
       } satisfies RegisterResponse);
     }
@@ -224,11 +234,16 @@ export async function POST(request: NextRequest) {
       updateAccountDefaultWallet(account.accountId, wallet.walletId);
     }
 
+    const organizations = [organization];
+    const wallets = wallet ? [wallet] : [];
+
     return NextResponse.json(
       {
         account,
         organization,
+        organizations,
         wallet,
+        wallets,
         isNewUser,
       } satisfies RegisterResponse,
       { status: 201 }

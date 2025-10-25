@@ -66,6 +66,18 @@ export async function verifyPrivyToken(token: string | null | undefined): Promis
     }
 
     const message = error instanceof Error ? error.message : "Unknown Privy verification error";
+
+    if (typeof message === "string" && message.toLowerCase().includes("signature verification failed")) {
+      throw new PrivyVerificationError(
+        [
+          "Privy signature verification failed.",
+          "Double-check that PRIVY_APP_ID and NEXT_PUBLIC_PRIVY_APP_ID reference the same Privy application,",
+          "and that PRIVY_APP_SECRET matches the app secret downloaded from the Privy dashboard.",
+          "If the secret was regenerated, update .env.local and restart the Next.js server.",
+        ].join(" ")
+      );
+    }
+
     throw new PrivyVerificationError(message);
   }
 }
