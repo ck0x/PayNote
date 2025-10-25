@@ -6,6 +6,7 @@
 // Import all API modules
 import { networksApi } from "./routes/networks";
 import { organizationsApi } from "./routes/organizations";
+import { accountsApi } from "./routes/accounts";
 import { walletsApi } from "./routes/wallets";
 import { categoriesApi } from "./routes/categories";
 import { rulesApi } from "./routes/rules";
@@ -16,10 +17,12 @@ import { analyticsApi } from "./routes/analytics";
 import { fxSnapshotsApi } from "./routes/fx-snapshots";
 import { searchApi } from "./routes/search";
 import { attachmentsApi } from "./routes/attachments";
+import { aggregatesApi } from "./routes/aggregates";
 
 // Export all API modules
 export { networksApi } from "./routes/networks";
 export { organizationsApi } from "./routes/organizations";
+export { accountsApi } from "./routes/accounts";
 export { walletsApi } from "./routes/wallets";
 export { categoriesApi } from "./routes/categories";
 export { rulesApi } from "./routes/rules";
@@ -30,6 +33,7 @@ export { analyticsApi } from "./routes/analytics";
 export { fxSnapshotsApi } from "./routes/fx-snapshots";
 export { searchApi } from "./routes/search";
 export { attachmentsApi } from "./routes/attachments";
+export { aggregatesApi } from "./routes/aggregates";
 
 // Export error classes
 export { ApiError, RateLimitError } from "./lib/errors";
@@ -49,6 +53,7 @@ export type {
 export const api = {
   networks: networksApi,
   organizations: organizationsApi,
+  accounts: accountsApi,
   wallets: walletsApi,
   categories: categoriesApi,
   rules: rulesApi,
@@ -59,4 +64,5 @@ export const api = {
   fxSnapshots: fxSnapshotsApi,
   search: searchApi,
   attachments: attachmentsApi,
+  aggregates: aggregatesApi,
 } as const;

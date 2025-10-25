@@ -67,7 +67,10 @@ export function saveAccount(account: Account, privyUserId: string) {
   return storedAccount;
 }
 
-export function updateAccountDefaultWallet(accountId: UUID, walletId: UUID | null) {
+export function updateAccountDefaultWallet(
+  accountId: UUID,
+  walletId: UUID | null
+) {
   const store = getStore();
 
   for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
@@ -84,7 +87,10 @@ export function updateAccountDefaultWallet(accountId: UUID, walletId: UUID | nul
   return undefined;
 }
 
-export function saveOrganization(organization: Organization, ownerAccountId: UUID) {
+export function saveOrganization(
+  organization: Organization,
+  ownerAccountId: UUID
+) {
   const store = getStore();
   const storedOrganization: StoredOrganization = {
     ...organization,
@@ -152,4 +158,69 @@ export function listWalletsForAccount(accountId: UUID): Wallet[] {
   }
 
   return wallets;
+}
+
+export function findOrganizationById(orgId: UUID) {
+  const store = getStore();
+  return store.organizationsByOrgId.get(orgId);
+}
+
+export function listAccountsForOrganization(orgId: UUID): Account[] {
+  const store = getStore();
+  const accounts: Account[] = [];
+
+  for (const account of store.accountsByPrivyId.values()) {
+    if (account.orgId === orgId) {
+      accounts.push(account);
+    }
+  }
+
+  return accounts;
+}
+
+export function findAccountById(accountId: UUID) {
+  const store = getStore();
+
+  for (const account of store.accountsByPrivyId.values()) {
+    if (account.accountId === accountId) {
+      return account;
+    }
+  }
+
+  return undefined;
+}
+
+export function updateAccount(accountId: UUID, updates: Partial<Account>) {
+  const store = getStore();
+
+  for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
+    if (account.accountId === accountId) {
+      const updated: StoredAccount = {
+        ...account,
+        ...updates,
+        accountId, // Ensure ID doesn't change
+      };
+      store.accountsByPrivyId.set(privyUserId, updated);
+      return updated;
+    }
+  }
+
+  return undefined;
+}
+
+export function deleteAccount(accountId: UUID) {
+  const store = getStore();
+
+  for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
+    if (account.accountId === accountId) {
+      store.accountsByPrivyId.delete(privyUserId);
+
+      // Clean up memberships
+      store.organizationMemberships.delete(accountId);
+
+      return true;
+    }
+  }
+
+  return false;
 }
