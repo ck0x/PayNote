@@ -1,5 +1,5 @@
 export enum Category {
-  All = "All",
+  All = "All Categories",
   Personal = "Personal",
   Operations = "Operations",
   Payroll = "Payroll",
