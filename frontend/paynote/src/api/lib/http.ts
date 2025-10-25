@@ -17,18 +17,35 @@ interface RequestOptions extends RequestInit {
 /**
  * Build URL with query parameters
  */
-function buildUrl(path: string, params?: Record<string, any>): string {
-  const url = new URL(path, API_BASE_URL);
+function buildUrl(path: string, params?: Record<string, unknown>): string {
+  const baseUrl = API_BASE_URL.startsWith("http")
+    ? API_BASE_URL
+    : typeof window !== "undefined"
+    ? `${window.location.origin}${API_BASE_URL}`
+    : API_BASE_URL;
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  const fullPath = baseUrl.startsWith("http")
+    ? new URL(normalizedPath, baseUrl).toString()
+    : `${baseUrl}${normalizedPath}`;
 
   if (params) {
+    const url = new URL(
+      fullPath,
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000"
+    );
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
       }
     });
+    return url.toString();
   }
 
-  return url.toString();
+  return fullPath;
 }
 
 /**
@@ -69,10 +86,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 429) {
     const retryAfter = response.headers.get("Retry-After");
     const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
-    throw new RateLimitError(
-      { ...problemDetail, retryAfterSeconds },
-      response
-    );
+    throw new RateLimitError({ ...problemDetail, retryAfterSeconds }, response);
   }
 
   // Other errors
@@ -137,21 +151,21 @@ export const http = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "GET" }),
 
-  post: <T>(path: string, body?: any, options?: RequestOptions) =>
+  post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, {
       ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  patch: <T>(path: string, body?: any, options?: RequestOptions) =>
+  patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, {
       ...options,
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  put: <T>(path: string, body?: any, options?: RequestOptions) =>
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, {
       ...options,
       method: "PUT",
