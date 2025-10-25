@@ -30,7 +30,7 @@ interface OrganizationContextValue {
   canManageMembers: () => boolean;
   canManageSettings: () => boolean;
   switchOrganization: (orgId: UUID) => Promise<void>;
-  refreshOrganization: () => Promise<void>;
+  refreshOrganizations: () => Promise<void>;
 }
 
 const OrganizationContext = createContext<OrganizationContextValue | undefined>(
@@ -53,7 +53,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         const org = await api.organizations.get(orgId);
         setCurrentOrg(org);
 
-        const accounts = await api.organizations.listAccounts(orgId);
+        const accountsResponse = await api.organizations.listAccounts(orgId);
+        // Ensure accounts is an array
+        const accounts = Array.isArray(accountsResponse)
+          ? accountsResponse
+          : [];
         const userAccount = accounts.find(
           (acc) => acc.email === user?.email?.address
         );
@@ -113,11 +117,22 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     fetchOrganizations();
   }, [authenticated, user, switchOrganization]);
 
-  // Refresh current organization data
-  async function refreshOrganization() {
-    if (!currentOrg) return;
-    await switchOrganization(currentOrg.orgId);
-  }
+  // Refresh organizations list
+  const refreshOrganizations = useCallback(async () => {
+    if (!authenticated || !user) return;
+
+    try {
+      setError(null);
+      const orgsResponse = await api.organizations.list();
+      const organisations = Array.isArray(orgsResponse) ? orgsResponse : [];
+      setOrganizations(organisations);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load organizations"
+      );
+      console.error("Failed to refresh organizations:", err);
+    }
+  }, [authenticated, user]);
 
   // Permission helpers
   const isOwner = () => currentAccount?.role === "Owner";
@@ -138,7 +153,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     canManageMembers,
     canManageSettings,
     switchOrganization,
-    refreshOrganization,
+    refreshOrganizations,
   };
 
   return (
