@@ -9,38 +9,46 @@ import SidebarNavItem from "./sidebar-nav-item";
 import { Button } from "@/components/ui/button";
 import {
   Home,
-  Compass,
-  Search,
   Users,
   Tag,
   Send,
   Braces,
   Settings,
   X,
+  Receipt,
+  BarChart3,
 } from "lucide-react";
 import { Header } from "@/components/navigation/header";
 import OrganizationSwitcher from "@/components/navigation/organization-switcher";
-
-const overviewLinks = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/search", label: "Search", icon: Search },
-];
-
-const workspaceLinks = [
-  { href: "/counterparties", label: "Counterparties", icon: Users },
-  { href: "/categories", label: "Categories & Rules", icon: Tag },
-  { href: "/send", label: "Send Payment", icon: Send },
-];
-
-const resourceLinks = [
-  { href: "/developer", label: "Developer", icon: Braces },
-];
+import { usePrivy } from "@privy-io/react-auth";
 
 export default function Sidebar({ children }: { children: ReactNode }) {
   const {
     showSidebarState: [isShowSidebar, setIsShowSidebar],
   } = useSidebar();
+
+  const { authenticated } = usePrivy();
+
+  // Overview links - conditional based on auth
+  const overviewLinks = authenticated
+    ? [
+        { href: "/", label: "Home", icon: Home },
+        { href: "/transactions", label: "Transactions", icon: Receipt },
+        { href: "/analytics", label: "Analytics", icon: BarChart3 },
+      ]
+    : [{ href: "/", label: "Home", icon: Home }];
+
+  // Workspace links - only shown when authenticated
+  const workspaceLinks = [
+    { href: "/counterparties", label: "Counterparties", icon: Users },
+    { href: "/categories", label: "Categories & Rules", icon: Tag },
+    { href: "/send", label: "Send Payment", icon: Send },
+  ];
+
+  // Resource links - always shown
+  const resourceLinks = [
+    { href: "/developer", label: "Developer", icon: Braces },
+  ];
 
   return (
     <>
@@ -97,22 +105,24 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                 ))}
               </div>
 
-              <div>
-                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Workspace
-                </p>
-                <div className="mt-2 space-y-1">
-                  {workspaceLinks.map((link) => (
-                    <SidebarNavItem
-                      key={link.href}
-                      href={link.href}
-                      icon={link.icon}
-                    >
-                      {link.label}
-                    </SidebarNavItem>
-                  ))}
+              {authenticated && (
+                <div>
+                  <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Workspace
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {workspaceLinks.map((link) => (
+                      <SidebarNavItem
+                        key={link.href}
+                        href={link.href}
+                        icon={link.icon}
+                      >
+                        {link.label}
+                      </SidebarNavItem>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

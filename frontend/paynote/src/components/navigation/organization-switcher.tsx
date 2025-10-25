@@ -28,7 +28,7 @@ type FetchState =
 export default function OrganizationSwitcher() {
   const router = useRouter();
   const { currentOrg, switchOrganization } = useOrganization();
-  const { authenticated } = usePrivy();
+  const { authenticated, login } = usePrivy();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>({ status: "idle" });
   const [activeOrgId, setActiveOrgId] = useState<UUID | null>(null);
@@ -56,7 +56,9 @@ export default function OrganizationSwitcher() {
       .catch((error) => {
         if (!isMounted) return;
         const message =
-          error instanceof Error ? error.message : "Failed to load organizations";
+          error instanceof Error
+            ? error.message
+            : "Failed to load organizations";
         setFetchState({ status: "error", message });
       });
 
@@ -118,6 +120,20 @@ export default function OrganizationSwitcher() {
       </div>
     );
   }, [fetchState, organizations.length, currentOrg?.name, currentOrg?.slug]);
+
+  // If not authenticated, show sign-in button
+  if (!authenticated) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        className="mt-4 w-full justify-center"
+        onClick={login}
+      >
+        Sign In
+      </Button>
+    );
+  }
 
   if (fetchState.status === "error") {
     return (
