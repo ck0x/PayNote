@@ -40,7 +40,6 @@ interface RegisterResponse {
   isNewUser: boolean;
 }
 
-const DEFAULT_BILLING_PLAN: Organization["billingPlan"] = "Free";
 const DEFAULT_CURRENCY: Organization["primaryCurrency"] = "USD";
 
 function resolveEmail(
@@ -92,7 +91,6 @@ function createOrganization(displayName: string, orgId: string) {
     orgId,
     name,
     slug: `${baseSlug}-${orgId.slice(0, 6)}`,
-    billingPlan: DEFAULT_BILLING_PLAN,
     primaryCurrency: DEFAULT_CURRENCY,
   } satisfies Organization;
 }
@@ -120,7 +118,7 @@ export async function POST(request: NextRequest) {
       body.walletAddress ?? user?.wallet?.address
     );
 
-    const existingAccount = findAccountByPrivyId(privyUserId);
+    const existingAccount = await findAccountByPrivyId(privyUserId);
     const isNewUser = !existingAccount;
 
     let account: Account;
@@ -138,7 +136,7 @@ export async function POST(request: NextRequest) {
 
       if (walletAddress) {
         const normalizedAddress = walletAddress.toLowerCase();
-        const globalWallet = findWalletByAddress(walletAddress);
+        const globalWallet = await findWalletByAddress(walletAddress);
 
         if (
           globalWallet &&
@@ -154,7 +152,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const existingWallets = listWalletsForAccount(updatedAccount.accountId);
+        const existingWallets = await listWalletsForAccount(
+          updatedAccount.accountId
+        );
         wallet = existingWallets.find(
           (entry) => entry.address.toLowerCase() === normalizedAddress
         );
@@ -168,12 +168,13 @@ export async function POST(request: NextRequest) {
             ownerAccountId: updatedAccount.accountId,
             createdAt: Math.floor(Date.now() / 1000),
           };
-          saveWallet(wallet);
+          await saveWallet(wallet);
         }
 
         updatedAccount.defaultWalletId = wallet.walletId;
       } else if (existingAccount.defaultWalletId) {
-        wallet = findWalletById(existingAccount.defaultWalletId) ?? undefined;
+        wallet =
+          (await findWalletById(existingAccount.defaultWalletId)) ?? undefined;
         updatedAccount.defaultWalletId =
           wallet?.walletId ?? existingAccount.defaultWalletId;
       } else {
@@ -181,22 +182,22 @@ export async function POST(request: NextRequest) {
         updatedAccount.defaultWalletId = null;
       }
 
-      saveAccount(updatedAccount, privyUserId);
+      await saveAccount(updatedAccount, privyUserId);
       account = updatedAccount;
 
-      let organizations = listOrganizationsForAccount(account.accountId);
+      let organizations = await listOrganizationsForAccount(account.accountId);
       if (!organizations.length) {
         organization = createOrganization(
           account.displayName,
           existingAccount.orgId
         );
-        saveOrganization(organization, account.accountId);
-        organizations = listOrganizationsForAccount(account.accountId);
+        await saveOrganization(organization, account.accountId);
+        organizations = await listOrganizationsForAccount(account.accountId);
       } else {
         organization = organizations[0]!;
       }
 
-      const wallets = listWalletsForAccount(account.accountId);
+      const wallets = await listWalletsForAccount(account.accountId);
       if (!wallet && account.defaultWalletId) {
         wallet = wallets.find(
           (entry) => entry.walletId === account.defaultWalletId
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
 
     if (body.walletAddress ?? user?.wallet?.address) {
       const walletAddress = (body.walletAddress ?? user?.wallet?.address)!;
-      const globalWallet = findWalletByAddress(walletAddress);
+      const globalWallet = await findWalletByAddress(walletAddress);
 
       if (globalWallet) {
         return NextResponse.json(
@@ -257,12 +258,12 @@ export async function POST(request: NextRequest) {
       account.defaultWalletId = walletId;
     }
 
-    saveOrganization(organization, accountId);
-    saveAccount(account, privyUserId);
+    await saveOrganization(organization, accountId);
+    await saveAccount(account, privyUserId);
 
     if (wallet) {
-      saveWallet(wallet);
-      updateAccountDefaultWallet(account.accountId, wallet.walletId);
+      await saveWallet(wallet);
+      await updateAccountDefaultWallet(account.accountId, wallet.walletId);
     }
 
     const organizations = [organization];

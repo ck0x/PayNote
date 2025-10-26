@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { claims, user } = await verifyPrivyToken(token);
     const privyUserId = claims.userId;
 
-    const existingAccount = findAccountByPrivyId(privyUserId);
+    const existingAccount = await findAccountByPrivyId(privyUserId);
 
     if (!existingAccount) {
       return NextResponse.json(
@@ -38,11 +38,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (shouldPersist) {
-      saveAccount(account, privyUserId);
+      await saveAccount(account, privyUserId);
     }
 
-    const organizations = listOrganizationsForAccount(existingAccount.accountId);
-    const wallets = listWalletsForAccount(existingAccount.accountId);
+    const organizations = await listOrganizationsForAccount(
+      existingAccount.accountId
+    );
+    const wallets = await listWalletsForAccount(existingAccount.accountId);
 
     const response: MeResponse = {
       account,

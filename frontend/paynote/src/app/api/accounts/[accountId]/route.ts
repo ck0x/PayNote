@@ -22,10 +22,10 @@ interface UpdateAccountRequest {
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  context: { params: Promise<{ accountId: string }> }
 ) {
   try {
-    const { accountId } = params;
+    const { accountId } = await context.params;
     const body: UpdateAccountRequest = await request.json();
 
     // Authenticate user
@@ -42,7 +42,9 @@ export async function PATCH(
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -52,7 +54,7 @@ export async function PATCH(
     }
 
     // Find the account to update
-    const targetAccount = findAccountById(accountId as UUID);
+    const targetAccount = await findAccountById(accountId as UUID);
     if (!targetAccount) {
       return NextResponse.json(
         createProblemDetail(404, "Not Found", "Account not found"),
@@ -112,7 +114,7 @@ export async function PATCH(
     }
 
     // Update the account
-    const updatedAccount = updateAccount(accountId as UUID, body);
+    const updatedAccount = await updateAccount(accountId as UUID, body);
 
     if (!updatedAccount) {
       return NextResponse.json(
@@ -145,10 +147,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  context: { params: Promise<{ accountId: string }> }
 ) {
   try {
-    const { accountId } = params;
+    const { accountId } = await context.params;
 
     // Authenticate user
     const token = extractBearerToken(request);
@@ -164,7 +166,9 @@ export async function DELETE(
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -174,7 +178,7 @@ export async function DELETE(
     }
 
     // Find the account to delete
-    const targetAccount = findAccountById(accountId as UUID);
+    const targetAccount = await findAccountById(accountId as UUID);
     if (!targetAccount) {
       return NextResponse.json(
         createProblemDetail(404, "Not Found", "Account not found"),
@@ -231,7 +235,7 @@ export async function DELETE(
     }
 
     // Delete the account
-    const success = deleteAccount(accountId as UUID);
+    const success = await deleteAccount(accountId as UUID);
 
     if (!success) {
       return NextResponse.json(

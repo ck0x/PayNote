@@ -13,10 +13,10 @@ import { createProblemDetail, extractBearerToken } from "../../auth/_lib/utils";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  context: { params: Promise<{ orgId: string }> }
 ) {
   try {
-    const { orgId } = params;
+    const { orgId } = await context.params;
 
     // Authenticate user
     const token = extractBearerToken(request);
@@ -32,7 +32,9 @@ export async function GET(
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -42,7 +44,7 @@ export async function GET(
     }
 
     // Find the organization
-    const organization = findOrganizationById(orgId as UUID);
+    const organization = await findOrganizationById(orgId as UUID);
     if (!organization) {
       return NextResponse.json(
         createProblemDetail(404, "Not Found", "Organization not found"),

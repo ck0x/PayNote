@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { claims, user } = await verifyPrivyToken(token);
     const privyUserId = claims.userId;
 
-    const existingAccount = findAccountByPrivyId(privyUserId);
+    const existingAccount = await findAccountByPrivyId(privyUserId);
 
     if (!existingAccount) {
       return NextResponse.json(
@@ -40,11 +40,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (shouldPersist) {
-      saveAccount(updatedAccount, privyUserId);
+      await saveAccount(updatedAccount, privyUserId);
     }
 
-    const organizations = listOrganizationsForAccount(existingAccount.accountId);
-    const wallets = listWalletsForAccount(existingAccount.accountId);
+    const organizations = await listOrganizationsForAccount(
+      existingAccount.accountId
+    );
+    const wallets = await listWalletsForAccount(existingAccount.accountId);
 
     const response: LoginResponse = {
       account: updatedAccount,
