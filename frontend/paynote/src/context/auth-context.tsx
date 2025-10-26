@@ -7,10 +7,8 @@ import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
 import type { UUID } from "@/types/primitives/UUID";
 import type { ProblemDetail } from "@/types/interfaces/ProblemDetail";
+import { setTokenProvider } from "@/api/lib/http";
 
-/**
- * Authentication state interface
- */
 interface AuthState {
   account: Account | null;
   organizations: Organization[];
@@ -20,9 +18,6 @@ interface AuthState {
   error: string | null;
 }
 
-/**
- * Registration/Login payload
- */
 interface RegisterLoginPayload {
   privyUserId?: string;
   email?: string;
@@ -30,9 +25,6 @@ interface RegisterLoginPayload {
   authMethod: string;
 }
 
-/**
- * Authentication context interface
- */
 interface AuthContextValue extends AuthState {
   registerOrLogin: (payload: RegisterLoginPayload) => Promise<void>;
   selectOrganization: (orgId: UUID) => void;
@@ -65,12 +57,26 @@ function hasAccountPayload(body: unknown): body is { account: Account } {
   );
 }
 
-/**
- * Auth Provider Component
- */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { authenticated, ready, user, logout: privyLogout, getAccessToken } = usePrivy();
-  
+  const {
+    authenticated,
+    ready,
+    user,
+    logout: privyLogout,
+    getAccessToken,
+  } = usePrivy();
+
+  useEffect(() => {
+    setTokenProvider(async () => {
+      try {
+        return await getAccessToken();
+      } catch (error) {
+        console.error("Failed to get Privy access token:", error);
+        return null;
+      }
+    });
+  }, [getAccessToken]);
+
   const [state, setState] = useState<AuthState>({
     account: null,
     organizations: [],
@@ -80,17 +86,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error: null,
   });
 
-  /**
-   * Register or login user with backend
-  */
   const registerOrLogin = async (payload: RegisterLoginPayload) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+    type AuthResponsePayload = {
+      account: Account;
+      organization?: Organization;
+      organizations?: Organization[];
+      wallet?: Wallet;
+      wallets?: Wallet[];
+    };
+
+    const applyAuthPayload = (authPayload: AuthResponsePayload) => {
+      const organizations = authPayload.organizations?.length
+        ? authPayload.organizations
+        : authPayload.organization
+        ? [authPayload.organization]
+        : [];
+
+      const wallets = authPayload.wallets?.length
+        ? authPayload.wallets
+        : authPayload.wallet
+        ? [authPayload.wallet]
+        : [];
+
+      const selectedOrgId =
+        state.selectedOrgId &&
+        organizations.some((org) => org.orgId === state.selectedOrgId)
+          ? state.selectedOrgId
+          : organizations[0]?.orgId || null;
+
+      if (selectedOrgId) {
+        localStorage.setItem("selectedOrgId", selectedOrgId);
+      } else {
+        localStorage.removeItem("selectedOrgId");
+      }
+
+      setState({
+        account: authPayload.account,
+        organizations,
+        selectedOrgId,
+        wallets,
+        isLoading: false,
+        error: null,
+      });
+    };
 
     try {
       const accessToken = await getAccessToken();
 
       if (!accessToken) {
         throw new Error("Missing Privy access token. Please log in again.");
+      }
+
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (loginResponse.ok) {
+        const loginBody = (await loginResponse
+          .json()
+          .catch(() => null)) as unknown;
+
+        if (!hasAccountPayload(loginBody)) {
+          throw new Error("Unexpected response from server");
+        }
+
+        applyAuthPayload(loginBody as AuthResponsePayload);
+        return;
+      }
+
+      if (loginResponse.status !== 404) {
+        const loginBody = (await loginResponse
+          .json()
+          .catch(() => null)) as unknown;
+        throw new Error(extractProblemDetail(loginBody) || "Failed to login");
       }
 
       const response = await fetch("/api/auth/register", {
@@ -108,49 +182,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const responseBody = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        throw new Error(extractProblemDetail(responseBody) || "Failed to register/login");
+        throw new Error(
+          extractProblemDetail(responseBody) || "Failed to register/login"
+        );
       }
 
       if (!hasAccountPayload(responseBody)) {
         throw new Error("Unexpected response from server");
       }
 
-      type RegisterApiResponse = {
-        account: Account;
-        organization?: Organization;
-        organizations?: Organization[];
-        wallet?: Wallet;
-        wallets?: Wallet[];
-      };
-
-      const registerPayload = responseBody as RegisterApiResponse;
-
-      const organizations =
-        registerPayload.organizations?.length
-          ? registerPayload.organizations
-          : registerPayload.organization
-            ? [registerPayload.organization]
-            : [];
-
-      const wallets =
-        registerPayload.wallets?.length
-          ? registerPayload.wallets
-          : registerPayload.wallet
-            ? [registerPayload.wallet]
-            : [];
-
-      setState({
-        account: registerPayload.account,
-        organizations,
-        selectedOrgId: organizations[0]?.orgId || null,
-        wallets,
-        isLoading: false,
-        error: null,
-      });
-
-      if (organizations[0]?.orgId) {
-        localStorage.setItem("selectedOrgId", organizations[0].orgId);
-      }
+      applyAuthPayload(responseBody as AuthResponsePayload);
     } catch (error) {
       console.error("Register/login error:", error);
       setState((prev) => ({
@@ -162,9 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  /**
-   * Refresh authentication state
-   */
   const refreshAuth = async () => {
     if (!authenticated || !user) {
       setState({
@@ -194,13 +232,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (response.status === 404) {
-        setState({
-          account: null,
-          organizations: [],
-          selectedOrgId: null,
-          wallets: [],
-          isLoading: false,
-          error: null,
+        const email = user.email?.address;
+        const walletAddress = user.wallet?.address;
+        const isWalletAuth = !email && walletAddress;
+
+        await registerOrLogin({
+          privyUserId: user.id,
+          email,
+          walletAddress: isWalletAuth ? walletAddress : undefined,
+          authMethod: isWalletAuth ? "wallet" : "email",
         });
         return;
       }
@@ -208,7 +248,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const responseBody = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        throw new Error(extractProblemDetail(responseBody) || "Failed to fetch user data");
+        throw new Error(
+          extractProblemDetail(responseBody) || "Failed to fetch user data"
+        );
       }
 
       if (!hasAccountPayload(responseBody)) {
@@ -238,26 +280,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: null,
       });
     } catch (error) {
-      console.error("Refresh auth error:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : "Failed to load user data",
+        error:
+          error instanceof Error ? error.message : "Failed to load user data",
       }));
     }
   };
 
-  /**
-   * Select organization
-   */
   const selectOrganization = (orgId: UUID) => {
     setState((prev) => ({ ...prev, selectedOrgId: orgId }));
     localStorage.setItem("selectedOrgId", orgId);
   };
 
-  /**
-   * Logout user
-   */
   const logout = async () => {
     await privyLogout();
     setState({
@@ -271,15 +307,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("selectedOrgId");
   };
 
-  /**
-   * Initialize auth state when Privy is ready
-   */
   useEffect(() => {
     if (ready && authenticated && user) {
       refreshAuth();
     } else if (ready && !authenticated) {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, authenticated, user?.id]);
 
   const value: AuthContextValue = {
@@ -293,9 +327,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Hook to use auth context
- */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -304,9 +335,6 @@ export function useAuth() {
   return context;
 }
 
-/**
- * Hook to get selected organization
- */
 export function useSelectedOrg() {
   const { organizations, selectedOrgId } = useAuth();
   return organizations.find((org) => org.orgId === selectedOrgId);
