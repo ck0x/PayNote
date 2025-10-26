@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import Providers from "../context/providers";
 import { ReactNode } from "react";
+import HeroBlockAnimation from "../components/animation/framer/background-effect";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} min-h-screen bg-background text-foreground antialiased`}
       >
+        <div className="fixed inset-0 -z-50 pointer-events-none">
+          <HeroBlockAnimation />
+        </div>
         <Providers>{children}</Providers>
       </body>
     </html>
