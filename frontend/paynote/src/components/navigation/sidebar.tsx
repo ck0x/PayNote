@@ -29,23 +29,20 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
   const { authenticated } = usePrivy();
 
-  // Overview links - conditional based on auth
   const overviewLinks = authenticated
     ? [
         { href: "/", label: "Home", icon: Home },
         { href: "/transactions", label: "Transactions", icon: Receipt },
-        { href: "/analytics", label: "Analytics", icon: BarChart3 },
+        // { href: "/analytics", label: "Analytics", icon: BarChart3 }, // feature flag!
       ]
     : [{ href: "/", label: "Home", icon: Home }];
 
-  // Workspace links - only shown when authenticated
   const workspaceLinks = [
     { href: "/counterparties", label: "Counterparties", icon: Users },
     { href: "/categories", label: "Categories & Rules", icon: Tag },
     { href: "/send", label: "Send Payment", icon: Send },
   ];
 
-  // Resource links - always shown
   const resourceLinks = [
     { href: "/developer", label: "Developer", icon: Braces },
   ];
@@ -75,7 +72,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                     height={12}
                     className="mr-2 block"
                   />
-                  <span>PayNote</span>
+                  <span className="font-brand">PayNote</span>
                 </Link>
                 <Button
                   variant="ghost"
@@ -87,7 +84,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                   <X className="size-5" />
                 </Button>
               </div>
-
               <OrganizationSwitcher />
             </div>
 

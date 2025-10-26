@@ -73,6 +73,12 @@ const config: Config = {
       fontFamily: {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        brand: [
+          "var(--font-space-grotesk)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       fontSize: {
         xs: ["0.75rem", { lineHeight: "1.1" }],
