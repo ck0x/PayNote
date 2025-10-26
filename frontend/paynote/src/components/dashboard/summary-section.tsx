@@ -24,7 +24,6 @@ export function SummarySection({
   summaries,
   headerTitle = "Transaction Summary",
   headerDescription = "Organization overview and analytics",
-  eyebrow = "PayNote HQ",
   topCategories = [],
   recentPayNotes = [],
 }: SummarySectionProps) {
@@ -37,7 +36,6 @@ export function SummarySection({
         <DashboardHeaderCard
           title={headerTitle}
           description={headerDescription}
-          eyebrow={eyebrow}
           className="border-white/20 bg-transparent p-0 text-black shadow-none dark:text-white [&>h1]:text-black [&>p]:text-black/80 dark:[&>h1]:text-white dark:[&>p]:text-white/80"
         />
 
