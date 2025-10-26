@@ -88,7 +88,8 @@ export function TransactionsList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.paynotes.list()
+    api.paynotes
+      .list()
       .then(setPaynotes)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -115,7 +116,6 @@ import { api } from "@/api";
 const newOrg = await api.organizations.create({
   name: "Acme Corp",
   slug: "acme-corp",
-  billingPlan: "Team",
   primaryCurrency: "USD",
 });
 
@@ -130,8 +130,12 @@ const category = await api.categories.create(orgId, {
 // Create rule
 const rule = await api.rules.create(orgId, {
   name: "Auto-tag invoices",
-  predicate: { /* rule logic */ },
-  actions: { /* actions */ },
+  predicate: {
+    /* rule logic */
+  },
+  actions: {
+    /* actions */
+  },
   enabled: true,
 });
 ```
@@ -144,7 +148,6 @@ import { api } from "@/api";
 // Update organization
 const updated = await api.organizations.update(orgId, {
   name: "New Name",
-  billingPlan: "Enterprise",
 });
 ```
 
@@ -171,9 +174,11 @@ const rates = await api.fxSnapshots.list({
 ## API Modules
 
 ### Networks
+
 - `list()` - List all supported blockchain networks
 
 ### Organizations
+
 - `list()` - List user's organizations
 - `get(orgId)` - Get organization by ID
 - `create(data)` - Create new organization
@@ -182,36 +187,46 @@ const rates = await api.fxSnapshots.list({
 - `listAccounts(orgId)` - List organization members
 
 ### Wallets
+
 - `list(params?)` - List wallets with optional filters
 
 ### Categories
+
 - `list(orgId)` - List categories for organization
 - `create(orgId, data)` - Create new category
 
 ### Rules
+
 - `list(orgId)` - List automation rules
 - `create(orgId, data)` - Create new rule
 
 ### Counterparties
+
 - `list(orgId, params?)` - List counterparties with optional type filter
 
 ### Contract Bindings
+
 - `list(params?)` - List contract bindings by chain/org
 
 ### PayNotes (Transactions)
+
 - `list(params?)` - List transactions with filters
 - `get(payNoteId)` - Get transaction by ID
 
 ### Analytics
+
 - `daily(params)` - Get daily aggregated metrics
 
 ### FX Snapshots
+
 - `list(params?)` - List exchange rate snapshots
 
 ### Search
+
 - `search(params)` - Search across all documents
 
 ### Attachments
+
 - `create(orgId, data)` - Create attachment metadata
 
 ## Configuration
@@ -237,14 +252,17 @@ Default: `/api` (uses Next.js API routes)
 ## Error Types
 
 ### ApiError
+
 Base error class for all HTTP errors.
 
 Properties:
+
 - `status: number` - HTTP status code
 - `problemDetail: ProblemDetail` - RFC 7807 problem details
 - `response?: Response` - Original fetch response
 
 Methods:
+
 - `is(status)` - Check specific status code
 - `isAuthError()` - Check if 401
 - `isForbidden()` - Check if 403
@@ -254,9 +272,11 @@ Methods:
 - `getFieldErrors()` - Get field-level validation errors
 
 ### RateLimitError
+
 Extends `ApiError` for 429 responses.
 
 Additional:
+
 - `retryAfterSeconds?: number` - Seconds until retry allowed
 
 ## Type Safety
