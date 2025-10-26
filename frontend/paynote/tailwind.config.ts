@@ -56,12 +56,19 @@ const config: Config = {
           200: "hsl(var(--brand-200))",
           300: "hsl(var(--brand-300))",
           400: "hsl(var(--brand-400))",
-          500: "hsl(var(--brand-500))", // ≈ #00bf63
+          500: "hsl(var(--brand-500))", // ≈ #00b456 (pigment-green)
           600: "hsl(var(--brand-600))",
           700: "hsl(var(--brand-700))",
           800: "hsl(var(--brand-800))",
           900: "hsl(var(--brand-900))",
         },
+
+        // Additional theme colors
+        "pigment-green": "hsl(var(--pigment-green))",
+        tan: "hsl(var(--tan))",
+        "rich-black": "hsl(var(--rich-black))",
+        moonstone: "hsl(var(--moonstone))",
+        xanthous: "hsl(var(--xanthous))",
       },
       fontFamily: {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -94,6 +101,26 @@ const config: Config = {
           "linear-gradient(135deg, hsl(var(--brand-400)) 0%, hsl(var(--brand-600)) 100%)",
         "mint-wash":
           "radial-gradient(60% 50% at 50% 0%, hsl(var(--brand-100)) 0%, transparent 60%)",
+
+        // Multi-color gradients using theme colors
+        "gradient-top":
+          "linear-gradient(0deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-right":
+          "linear-gradient(90deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-bottom":
+          "linear-gradient(180deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-left":
+          "linear-gradient(270deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-top-right":
+          "linear-gradient(45deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-bottom-right":
+          "linear-gradient(135deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-top-left":
+          "linear-gradient(225deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-bottom-left":
+          "linear-gradient(315deg, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
+        "gradient-radial":
+          "radial-gradient(circle, hsl(var(--pigment-green)), hsl(var(--tan)), hsl(var(--rich-black)), hsl(var(--moonstone)), hsl(var(--xanthous)))",
       },
       transitionTimingFunction: {
         playful: "cubic-bezier(0.2, 0.8, 0.2, 1)",
