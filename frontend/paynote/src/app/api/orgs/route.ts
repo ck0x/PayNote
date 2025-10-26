@@ -3,8 +3,11 @@ import { verifyPrivyToken } from "../auth/_lib/privy";
 import {
   findAccountByPrivyId,
   listOrganizationsForAccount,
+  saveOrganization,
 } from "../auth/_lib/store";
 import { createProblemDetail, extractBearerToken } from "../auth/_lib/utils";
+import type { Organization } from "@/types/interfaces/Organization";
+import { randomUUID } from "crypto";
 
 /**
  * GET /api/orgs
@@ -26,7 +29,9 @@ export async function GET(request: NextRequest) {
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = await findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -48,6 +53,77 @@ export async function GET(request: NextRequest) {
         500,
         "Internal Server Error",
         "Failed to list organizations"
+      ),
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/orgs
+ * Create a new organization
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Authenticate user
+    const token = extractBearerToken(request);
+    if (!token) {
+      return NextResponse.json(
+        createProblemDetail(
+          401,
+          "Unauthorized",
+          "Missing authentication token"
+        ),
+        { status: 401 }
+      );
+    }
+
+    const privyPayload = await verifyPrivyToken(token);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
+
+    if (!currentAccount) {
+      return NextResponse.json(
+        createProblemDetail(401, "Unauthorized", "Account not found"),
+        { status: 401 }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { name, slug, primaryCurrency } = body;
+
+    // Validate required fields
+    if (!name || !slug || !primaryCurrency) {
+      return NextResponse.json(
+        createProblemDetail(
+          400,
+          "Bad Request",
+          "Missing required fields: name, slug, primaryCurrency"
+        ),
+        { status: 400 }
+      );
+    }
+
+    // Create organization
+    const organization: Organization = {
+      orgId: randomUUID(),
+      name,
+      slug,
+      primaryCurrency,
+    };
+
+    await saveOrganization(organization, currentAccount.accountId);
+
+    return NextResponse.json(organization, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/orgs error:", error);
+    return NextResponse.json(
+      createProblemDetail(
+        500,
+        "Internal Server Error",
+        "Failed to create organization"
       ),
       { status: 500 }
     );

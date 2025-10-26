@@ -13,7 +13,7 @@ import type { Account } from "@/types/interfaces/Account";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
 import type { UUID } from "@/types/primitives/UUID";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 function mapAccount(row: AccountRow): Account {
   return {
@@ -158,6 +158,24 @@ export async function saveOrganization(
   await ensureMembership(ownerAccountId, organization.orgId, "Owner");
 
   return organization;
+}
+
+export async function checkAccountHasOrgAccess(
+  accountId: UUID,
+  orgId: UUID
+): Promise<boolean> {
+  const membership = await db
+    .select()
+    .from(organizationMemberships)
+    .where(
+      and(
+        eq(organizationMemberships.accountId, accountId),
+        eq(organizationMemberships.orgId, orgId)
+      )
+    )
+    .limit(1);
+
+  return membership.length > 0;
 }
 
 export async function listOrganizationsForAccount(accountId: UUID) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { UUID } from "@/types/primitives/UUID";
 import { verifyPrivyToken } from "../../auth/_lib/privy";
 import {
+  checkAccountHasOrgAccess,
   findAccountByPrivyId,
   findOrganizationById,
 } from "../../auth/_lib/store";
@@ -52,8 +53,11 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization
-    if (currentAccount.orgId !== orgId) {
+    const hasAccess = await checkAccountHasOrgAccess(
+      currentAccount.accountId,
+      orgId as UUID
+    );
+    if (!hasAccess) {
       return NextResponse.json(
         createProblemDetail(
           403,

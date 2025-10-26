@@ -4,6 +4,7 @@ import type { UUID } from "@/types/primitives/UUID";
 import type { Role } from "@/types/enums/Role";
 import { verifyPrivyToken } from "../../../auth/_lib/privy";
 import {
+  checkAccountHasOrgAccess,
   findAccountByPrivyId,
   findOrganizationById,
   listAccountsForOrganization,
@@ -63,7 +64,11 @@ export async function GET(
       );
     }
 
-    if (currentAccount.orgId !== orgId) {
+    const hasAccess = await checkAccountHasOrgAccess(
+      currentAccount.accountId,
+      orgId as UUID
+    );
+    if (!hasAccess) {
       return NextResponse.json(
         createProblemDetail(
           403,
@@ -142,8 +147,11 @@ export async function POST(
       );
     }
 
-    // Verify user has permission (must be Admin or Owner)
-    if (currentAccount.orgId !== orgId) {
+    const hasAccess = await checkAccountHasOrgAccess(
+      currentAccount.accountId,
+      orgId as UUID
+    );
+    if (!hasAccess) {
       return NextResponse.json(
         createProblemDetail(
           403,
