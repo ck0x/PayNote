@@ -72,7 +72,9 @@ export default function ExplorePage() {
                     <p className="font-mono text-sm text-muted-foreground">
                       {note.txHash}
                     </p>
-                    <p className="font-semibold">{note.payReference}</p>
+                    <p className="font-semibold">
+                      {note.payReference || "No reference"}
+                    </p>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="px-2 py-1 rounded bg-muted">
                         {note.status}

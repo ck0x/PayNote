@@ -95,7 +95,9 @@ export default function WalletDetailPage({
                 className="flex items-center justify-between border-b pb-3"
               >
                 <div>
-                  <p className="font-medium">{note.payReference}</p>
+                  <p className="font-medium">
+                    {note.payReference || "No reference"}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(note.timestamp * 1000).toLocaleDateString()}
                   </p>
@@ -129,7 +131,9 @@ export default function WalletDetailPage({
                 className="flex items-center justify-between border-b pb-3"
               >
                 <div>
-                  <p className="font-medium">{note.payReference}</p>
+                  <p className="font-medium">
+                    {note.payReference || "No reference"}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(note.timestamp * 1000).toLocaleDateString()}
                   </p>

@@ -4,7 +4,6 @@
 export type OrganizationCreate = {
   name: string;
   slug: string;
-  billingPlan: "Free" | "Team" | "Enterprise";
   primaryCurrency: string;
 };
 
@@ -13,7 +12,6 @@ export type OrganizationCreate = {
  */
 export type OrganizationUpdate = {
   name?: string;
-  billingPlan?: "Free" | "Team" | "Enterprise";
   primaryCurrency?: string;
 };
 

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { PayNote } from "@/types/interfaces/PayNote";
+import { formatEther } from "viem";
 
 interface RecentPayNotesCardProps {
   payNotes: PayNote[];
@@ -11,6 +12,14 @@ export function RecentPayNotesCard({
   payNotes,
   className,
 }: RecentPayNotesCardProps) {
+  const formatAmount = (valueWei: string) => {
+    try {
+      return `${formatEther(BigInt(valueWei))} ETH`;
+    } catch {
+      return `${valueWei} wei`;
+    }
+  };
+
   return (
     <Card className={cn("p-6", className)}>
       <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
@@ -26,13 +35,15 @@ export function RecentPayNotesCard({
               className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
             >
               <div>
-                <p className="font-medium">{note.payReference}</p>
+                <p className="font-medium">
+                  {note.payReference || "No reference"}
+                </p>
                 <p className="text-sm text-muted-foreground font-mono">
-                  {note.txHash.slice(0, 16)}...
+                  {note.txHash ? `${note.txHash.slice(0, 16)}...` : "—"}
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-semibold">{note.amountWei} wei</p>
+                <p className="font-semibold">{formatAmount(note.amountWei)}</p>
                 <span
                   className={`text-xs px-2 py-1 rounded ${
                     note.status === "Settled"

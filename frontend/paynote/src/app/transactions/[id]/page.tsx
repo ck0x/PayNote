@@ -6,12 +6,6 @@ import type { PayNote } from "@/types/interfaces/PayNote";
 import type { Network } from "@/types/interfaces/Network";
 import type { Attachment } from "@/types/interfaces/Attachment";
 import type { Category } from "@/types/interfaces/Category";
-
-/**
- * Transaction Detail Page
- * Full PayNote view: on-chain metadata, reference, categories, attachments
- * Entities: PayNote, Network, Attachment, Category
- */
 export default function TransactionDetailPage({
   params,
 }: {
@@ -50,7 +44,9 @@ export default function TransactionDetailPage({
       {/* Main Info */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Payment Reference</h2>
-        <p className="text-lg mb-6">{payNote.payReference}</p>
+        <p className="text-lg mb-6">
+          {payNote.payReference || "No reference provided"}
+        </p>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -79,7 +75,9 @@ export default function TransactionDetailPage({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Network</p>
-            <p className="mt-1">{network?.name ?? `Chain ${payNote.chainId}`}</p>
+            <p className="mt-1">
+              {network?.name ?? `Chain ${payNote.chainId}`}
+            </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Timestamp</p>
@@ -95,7 +93,9 @@ export default function TransactionDetailPage({
         <h2 className="text-xl font-semibold mb-4">Categories</h2>
         <div className="flex flex-wrap gap-2">
           {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories assigned</p>
+            <p className="text-sm text-muted-foreground">
+              No categories assigned
+            </p>
           ) : (
             categories.map((cat) => (
               <span

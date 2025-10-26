@@ -10,12 +10,12 @@ import type { ContractBinding } from "@/types/interfaces/ContractBinding";
 
 /**
  * Organization Settings Page
- * Org profile, members, billing, default currency, contract bindings
+ * Org profile, members, default currency, contract bindings
  * Entities: Organization, Account, ContractBinding
  */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
-    "general" | "members" | "contracts" | "billing"
+    "general" | "members" | "contracts"
   >("general");
 
   // TODO: Fetch from API
@@ -39,7 +39,6 @@ export default function SettingsPage() {
           { key: "general", label: "General" },
           { key: "members", label: "Members" },
           { key: "contracts", label: "Contracts" },
-          { key: "billing", label: "Billing" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -75,7 +74,8 @@ export default function SettingsPage() {
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Used in URLs: paynote.app/org/{organization?.slug || "your-org"}
+                  Used in URLs: paynote.app/org/
+                  {organization?.slug || "your-org"}
                 </p>
               </div>
               <div>
@@ -184,39 +184,6 @@ export default function SettingsPage() {
                 ))
               )}
             </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Billing Tab */}
-      {activeTab === "billing" && (
-        <div className="space-y-4">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Billing Plan</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-lg">
-                    Current Plan: {organization?.billingPlan || "Free"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {organization?.billingPlan === "Free"
-                      ? "Limited features"
-                      : organization?.billingPlan === "Team"
-                      ? "Up to 10 members"
-                      : "Unlimited members and features"}
-                  </p>
-                </div>
-                <Button variant="outline">Change Plan</Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Billing History</h2>
-            <p className="text-sm text-muted-foreground">
-              No billing history available
-            </p>
           </Card>
         </div>
       )}

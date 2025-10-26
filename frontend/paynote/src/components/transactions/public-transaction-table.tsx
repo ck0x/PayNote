@@ -4,10 +4,11 @@ interface PublicTransactionRow {
   hash: string;
   from: string;
   to: string;
-  status: string;
-  value: string;
+  status: "Settled" | "Pending" | "Failed";
+  usd: string;
+  eth: string;
   network: string;
-  timestamp: string;
+  ts: string;
   category: string;
 }
 
@@ -55,14 +56,23 @@ export function PublicTransactionTable({
                 <td className="py-3 pr-4 font-mono text-xs">{row.hash}</td>
                 <td className="py-3 pr-4 font-mono text-xs">{row.from}</td>
                 <td className="py-3 pr-4 font-mono text-xs">{row.to}</td>
-                <td className="py-3 pr-4">{row.value}</td>
+                <td className="py-3 pr-4">
+                  <div className="font-semibold text-foreground">
+                    {row.usd}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {row.eth}
+                  </div>
+                </td>
                 <td className="py-3 pr-4">{row.network}</td>
                 <td className="py-3 pr-4">
                   <span
                     className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                      row.status === "confirmed"
+                      row.status === "Settled"
                         ? "bg-success/10 text-success"
-                        : "bg-warning/10 text-warning"
+                        : row.status === "Pending"
+                        ? "bg-warning/10 text-warning"
+                        : "bg-destructive/10 text-destructive"
                     }`}
                   >
                     {row.status}
