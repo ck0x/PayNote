@@ -38,8 +38,8 @@ export default function OrganizationSwitcher() {
   const organizations = contextOrganizations;
 
   const handleOrganizationCreated = async () => {
-    // Refresh the organizations list from context
     try {
+      setFetchState({ status: "loading" });
       await refreshOrganizations();
       setFetchState({ status: "success" });
     } catch (error) {
