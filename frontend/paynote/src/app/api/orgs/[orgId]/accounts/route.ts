@@ -31,7 +31,6 @@ export async function GET(
   try {
     const { orgId } = await context.params;
 
-    // Authenticate user
     const token = extractBearerToken(request);
     if (!token) {
       return NextResponse.json(
@@ -56,7 +55,6 @@ export async function GET(
       );
     }
 
-    // Verify organization exists
     const organization = await findOrganizationById(orgId as UUID);
     if (!organization) {
       return NextResponse.json(
@@ -65,7 +63,6 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this organization
     if (currentAccount.orgId !== orgId) {
       return NextResponse.json(
         createProblemDetail(
@@ -77,7 +74,6 @@ export async function GET(
       );
     }
 
-    // Get all accounts in the organization
     const accounts = await listAccountsForOrganization(orgId as UUID);
 
     return NextResponse.json(accounts);
@@ -106,7 +102,6 @@ export async function POST(
     const { orgId } = await context.params;
     const body: CreateAccountRequest = await request.json();
 
-    // Validate request body
     if (!body.email || !body.role) {
       return NextResponse.json(
         createProblemDetail(400, "Bad Request", "Email and role are required"),
@@ -114,7 +109,6 @@ export async function POST(
       );
     }
 
-    // Authenticate user
     const token = extractBearerToken(request);
     if (!token) {
       return NextResponse.json(
@@ -171,7 +165,6 @@ export async function POST(
       );
     }
 
-    // Check if account with this email already exists in the org
     const existingAccounts = await listAccountsForOrganization(orgId as UUID);
     const emailExists = existingAccounts.some(
       (acc: Account) => acc.email === body.email
@@ -188,7 +181,6 @@ export async function POST(
       );
     }
 
-    // Create new account
     const newAccount: Account = {
       accountId: crypto.randomUUID() as UUID,
       orgId: orgId as UUID,
@@ -198,11 +190,8 @@ export async function POST(
       defaultWalletId: null,
     };
 
-    // Save account with a placeholder Privy ID (in real scenario, this would be from invitation flow)
     const placeholderPrivyId = `pending_${newAccount.accountId}`;
     await saveAccount(newAccount, placeholderPrivyId);
-
-    // TODO: Send invitation email to user
 
     return NextResponse.json(newAccount, { status: 201 });
   } catch (error) {
