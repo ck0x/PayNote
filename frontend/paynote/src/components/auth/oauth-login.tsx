@@ -4,7 +4,6 @@ import { useLoginWithOAuth } from "@privy-io/react-auth";
 import type { OAuthProviderType } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
@@ -16,38 +15,22 @@ interface OAuthButtonProps {
 
 function OAuthButton({ provider, label, icon }: OAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { registerOrLogin } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const { initOAuth } = useLoginWithOAuth({
-    onComplete: async ({ user, isNewUser }) => {
-      console.log(`User logged in successfully with ${provider}`, user);
+    onComplete: async ({ isNewUser }) => {
+      console.log(`User logged in successfully with ${provider}`);
 
-      try {
-        await registerOrLogin({
-          privyUserId: user.id,
-          email: user.email?.address,
-          walletAddress: user.wallet?.address,
-          authMethod: provider,
-        });
+      toast({
+        title: isNewUser ? "Welcome!" : "Welcome back!",
+        description: isNewUser
+          ? "Your account has been created successfully."
+          : "You've been logged in successfully.",
+      });
 
-        toast({
-          title: isNewUser ? "Welcome!" : "Welcome back!",
-          description: isNewUser
-            ? "Your account has been created successfully."
-            : "You've been logged in successfully.",
-        });
-        router.push("/");
-      } catch (error) {
-        console.error("Failed to sync user with backend:", error);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to complete authentication. Please try again.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-      }
+      setIsLoading(false);
+      router.push("/");
     },
     onError: (error) => {
       console.error(`Login with ${provider} failed:`, error);

@@ -1,226 +1,302 @@
+import { db } from "@/config/db";
+import {
+  accounts,
+  organizationMemberships,
+  organizations,
+  wallets,
+  type AccountRow,
+  type OrganizationRow,
+  type WalletRow,
+} from "@/db/schema";
+import type { Role } from "@/types/enums/Role";
 import type { Account } from "@/types/interfaces/Account";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Wallet } from "@/types/interfaces/Wallet";
 import type { UUID } from "@/types/primitives/UUID";
+import { eq, inArray } from "drizzle-orm";
 
-type StoredAccount = Account & {
-  privyUserId: string;
-};
-
-type StoredOrganization = Organization & {
-  ownerAccountId: UUID;
-};
-
-type StoredWallet = Wallet;
-
-type AuthStoreShape = {
-  accountsByPrivyId: Map<string, StoredAccount>;
-  organizationsByOrgId: Map<UUID, StoredOrganization>;
-  walletsByWalletId: Map<UUID, StoredWallet>;
-  walletIdsByAddress: Map<string, UUID>;
-  organizationMemberships: Map<UUID, Set<UUID>>;
-};
-
-const GLOBAL_STORE_KEY = Symbol.for("paynote.auth-store");
-
-function initStore(): AuthStoreShape {
+function mapAccount(row: AccountRow): Account {
   return {
-    accountsByPrivyId: new Map(),
-    organizationsByOrgId: new Map(),
-    organizationMemberships: new Map(),
-    walletsByWalletId: new Map(),
-    walletIdsByAddress: new Map(),
+    accountId: row.accountId as UUID,
+    orgId: row.orgId as UUID,
+    email: row.email,
+    displayName: row.displayName,
+    role: row.role as Role,
+    defaultWalletId: (row.defaultWalletId as UUID | null) ?? null,
   };
 }
 
-function getStore(): AuthStoreShape {
-  const globalSymbolRegistry = globalThis as typeof globalThis & {
-    [GLOBAL_STORE_KEY]?: AuthStoreShape;
+function mapOrganization(row: OrganizationRow): Organization {
+  return {
+    orgId: row.orgId as UUID,
+    name: row.name,
+    slug: row.slug,
+    primaryCurrency: row.primaryCurrency,
   };
-
-  if (!globalSymbolRegistry[GLOBAL_STORE_KEY]) {
-    globalSymbolRegistry[GLOBAL_STORE_KEY] = initStore();
-  }
-
-  return globalSymbolRegistry[GLOBAL_STORE_KEY]!;
 }
 
-export function findAccountByPrivyId(privyUserId: string) {
-  const store = getStore();
-  return store.accountsByPrivyId.get(privyUserId);
-}
+function mapWallet(row: WalletRow): Wallet {
+  const createdAt =
+    row.createdAt instanceof Date
+      ? row.createdAt
+      : row.createdAt
+      ? new Date(row.createdAt)
+      : new Date();
 
-export function saveAccount(account: Account, privyUserId: string) {
-  const store = getStore();
-  const storedAccount: StoredAccount = {
-    ...account,
-    privyUserId,
+  return {
+    walletId: row.walletId as UUID,
+    ownerAccountId: (row.ownerAccountId as UUID | null) ?? null,
+    address: row.address,
+    ensName: row.ensName,
+    label: row.label,
+    createdAt: Math.floor(createdAt.getTime() / 1000),
   };
-
-  store.accountsByPrivyId.set(privyUserId, storedAccount);
-
-  const memberships =
-    store.organizationMemberships.get(account.accountId) ?? new Set<UUID>();
-  memberships.add(account.orgId);
-  store.organizationMemberships.set(account.accountId, memberships);
-
-  return storedAccount;
 }
 
-export function updateAccountDefaultWallet(
+async function ensureMembership(accountId: UUID, orgId: UUID, role: Role) {
+  await db
+    .insert(organizationMemberships)
+    .values({
+      accountId,
+      orgId,
+      role,
+    })
+    .onConflictDoUpdate({
+      target: [
+        organizationMemberships.accountId,
+        organizationMemberships.orgId,
+      ],
+      set: {
+        role,
+      },
+    });
+}
+
+export async function findAccountByPrivyId(privyUserId: string) {
+  const row = await db.query.accounts.findFirst({
+    where: eq(accounts.privyUserId, privyUserId),
+  });
+  return row ? mapAccount(row) : undefined;
+}
+
+export async function findAccountByEmail(email: string) {
+  const row = await db.query.accounts.findFirst({
+    where: eq(accounts.email, email),
+  });
+  return row ? mapAccount(row) : undefined;
+}
+
+export async function saveAccount(account: Account, privyUserId: string) {
+  await db
+    .insert(accounts)
+    .values({
+      accountId: account.accountId,
+      orgId: account.orgId,
+      privyUserId,
+      email: account.email,
+      displayName: account.displayName,
+      role: account.role,
+      defaultWalletId: account.defaultWalletId ?? null,
+    })
+    .onConflictDoUpdate({
+      target: accounts.accountId,
+      set: {
+        orgId: account.orgId,
+        privyUserId,
+        email: account.email,
+        displayName: account.displayName,
+        role: account.role,
+        defaultWalletId: account.defaultWalletId ?? null,
+      },
+    });
+
+  await ensureMembership(account.accountId, account.orgId, account.role);
+
+  return account;
+}
+
+export async function updateAccountDefaultWallet(
   accountId: UUID,
   walletId: UUID | null
 ) {
-  const store = getStore();
+  const updated = await db
+    .update(accounts)
+    .set({ defaultWalletId: walletId })
+    .where(eq(accounts.accountId, accountId))
+    .returning();
 
-  for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
-    if (account.accountId === accountId) {
-      const updated: StoredAccount = {
-        ...account,
-        defaultWalletId: walletId,
-      };
-      store.accountsByPrivyId.set(privyUserId, updated);
-      return updated;
-    }
-  }
-
-  return undefined;
+  return updated.length ? mapAccount(updated[0]!) : undefined;
 }
 
-export function saveOrganization(
+export async function saveOrganization(
   organization: Organization,
   ownerAccountId: UUID
 ) {
-  const store = getStore();
-  const storedOrganization: StoredOrganization = {
-    ...organization,
-    ownerAccountId,
-  };
+  await db
+    .insert(organizations)
+    .values({
+      orgId: organization.orgId,
+      name: organization.name,
+      slug: organization.slug,
+      primaryCurrency: organization.primaryCurrency,
+    })
+    .onConflictDoUpdate({
+      target: organizations.orgId,
+      set: {
+        name: organization.name,
+        slug: organization.slug,
+        primaryCurrency: organization.primaryCurrency,
+      },
+    });
 
-  store.organizationsByOrgId.set(organization.orgId, storedOrganization);
+  await ensureMembership(ownerAccountId, organization.orgId, "Owner");
 
-  let memberships = store.organizationMemberships.get(ownerAccountId);
-  if (!memberships) {
-    memberships = new Set();
-    store.organizationMemberships.set(ownerAccountId, memberships);
-  }
-
-  memberships.add(organization.orgId);
-
-  return storedOrganization;
+  return organization;
 }
 
-export function listOrganizationsForAccount(accountId: UUID): Organization[] {
-  const store = getStore();
-  const memberships = store.organizationMemberships.get(accountId);
+export async function listOrganizationsForAccount(accountId: UUID) {
+  const memberships = await db
+    .select({ orgId: organizationMemberships.orgId })
+    .from(organizationMemberships)
+    .where(eq(organizationMemberships.accountId, accountId));
 
-  if (!memberships?.size) {
+  if (!memberships.length) {
     return [];
   }
 
-  const organizations: Organization[] = [];
-  for (const orgId of memberships.values()) {
-    const organization = store.organizationsByOrgId.get(orgId);
-    if (organization) {
-      organizations.push(organization);
-    }
-  }
+  const rows = await db
+    .select()
+    .from(organizations)
+    .where(
+      inArray(
+        organizations.orgId,
+        memberships.map((entry) => entry.orgId)
+      )
+    );
 
-  return organizations;
+  return rows.map(mapOrganization);
 }
 
-export function saveWallet(wallet: Wallet) {
-  const store = getStore();
-  store.walletsByWalletId.set(wallet.walletId, wallet);
-  store.walletIdsByAddress.set(wallet.address.toLowerCase(), wallet.walletId);
+export async function saveWallet(wallet: Wallet) {
+  const normalizedAddress = wallet.address.toLowerCase();
+
+  await db
+    .insert(wallets)
+    .values({
+      walletId: wallet.walletId,
+      ownerAccountId: wallet.ownerAccountId ?? null,
+      address: normalizedAddress,
+      ensName: wallet.ensName ?? null,
+      label: wallet.label ?? null,
+    })
+    .onConflictDoUpdate({
+      target: wallets.walletId,
+      set: {
+        ownerAccountId: wallet.ownerAccountId ?? null,
+        address: normalizedAddress,
+        ensName: wallet.ensName ?? null,
+        label: wallet.label ?? null,
+      },
+    });
+
   return wallet;
 }
 
-export function findWalletById(walletId: UUID) {
-  const store = getStore();
-  return store.walletsByWalletId.get(walletId);
+export async function findWalletById(walletId: UUID) {
+  const row = await db.query.wallets.findFirst({
+    where: eq(wallets.walletId, walletId),
+  });
+
+  return row ? mapWallet(row) : undefined;
 }
 
-export function findWalletByAddress(address: string) {
-  const store = getStore();
-  const walletId = store.walletIdsByAddress.get(address.toLowerCase());
-  return walletId ? store.walletsByWalletId.get(walletId) : undefined;
+export async function findWalletByAddress(address: string) {
+  const normalized = address.toLowerCase();
+  const row = await db.query.wallets.findFirst({
+    where: eq(wallets.address, normalized),
+  });
+
+  return row ? mapWallet(row) : undefined;
 }
 
-export function listWalletsForAccount(accountId: UUID): Wallet[] {
-  const store = getStore();
-  const wallets: Wallet[] = [];
+export async function listWalletsForAccount(accountId: UUID) {
+  const rows = await db
+    .select()
+    .from(wallets)
+    .where(eq(wallets.ownerAccountId, accountId));
 
-  for (const wallet of store.walletsByWalletId.values()) {
-    if (wallet.ownerAccountId === accountId) {
-      wallets.push(wallet);
-    }
+  return rows.map(mapWallet);
+}
+
+export async function findOrganizationById(orgId: UUID) {
+  const row = await db.query.organizations.findFirst({
+    where: eq(organizations.orgId, orgId),
+  });
+
+  return row ? mapOrganization(row) : undefined;
+}
+
+export async function listAccountsForOrganization(orgId: UUID) {
+  const rows = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.orgId, orgId));
+
+  return rows.map(mapAccount);
+}
+
+export async function findAccountById(accountId: UUID) {
+  const row = await db.query.accounts.findFirst({
+    where: eq(accounts.accountId, accountId),
+  });
+
+  return row ? mapAccount(row) : undefined;
+}
+
+export async function updateAccount(
+  accountId: UUID,
+  updates: Partial<Account>
+) {
+  const updatePayload: Record<string, unknown> = {};
+
+  if (updates.displayName !== undefined) {
+    updatePayload.displayName = updates.displayName;
+  }
+  if (updates.role !== undefined) {
+    updatePayload.role = updates.role;
+  }
+  if (updates.defaultWalletId !== undefined) {
+    updatePayload.defaultWalletId = updates.defaultWalletId;
   }
 
-  return wallets;
-}
-
-export function findOrganizationById(orgId: UUID) {
-  const store = getStore();
-  return store.organizationsByOrgId.get(orgId);
-}
-
-export function listAccountsForOrganization(orgId: UUID): Account[] {
-  const store = getStore();
-  const accounts: Account[] = [];
-
-  for (const account of store.accountsByPrivyId.values()) {
-    if (account.orgId === orgId) {
-      accounts.push(account);
-    }
+  if (!Object.keys(updatePayload).length) {
+    return findAccountById(accountId);
   }
 
-  return accounts;
-}
+  const rows = await db
+    .update(accounts)
+    .set(updatePayload)
+    .where(eq(accounts.accountId, accountId))
+    .returning();
 
-export function findAccountById(accountId: UUID) {
-  const store = getStore();
-
-  for (const account of store.accountsByPrivyId.values()) {
-    if (account.accountId === accountId) {
-      return account;
-    }
+  if (!rows.length) {
+    return undefined;
   }
 
-  return undefined;
+  const updated = mapAccount(rows[0]!);
+  await ensureMembership(updated.accountId, updated.orgId, updated.role);
+  return updated;
 }
 
-export function updateAccount(accountId: UUID, updates: Partial<Account>) {
-  const store = getStore();
+export async function deleteAccount(accountId: UUID) {
+  await db
+    .delete(organizationMemberships)
+    .where(eq(organizationMemberships.accountId, accountId));
 
-  for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
-    if (account.accountId === accountId) {
-      const updated: StoredAccount = {
-        ...account,
-        ...updates,
-        accountId, // Ensure ID doesn't change
-      };
-      store.accountsByPrivyId.set(privyUserId, updated);
-      return updated;
-    }
-  }
+  const rows = await db
+    .delete(accounts)
+    .where(eq(accounts.accountId, accountId))
+    .returning({ accountId: accounts.accountId });
 
-  return undefined;
-}
-
-export function deleteAccount(accountId: UUID) {
-  const store = getStore();
-
-  for (const [privyUserId, account] of store.accountsByPrivyId.entries()) {
-    if (account.accountId === accountId) {
-      store.accountsByPrivyId.delete(privyUserId);
-
-      // Clean up memberships
-      store.organizationMemberships.delete(accountId);
-
-      return true;
-    }
-  }
-
-  return false;
+  return rows.length > 0;
 }

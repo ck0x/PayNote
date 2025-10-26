@@ -12,7 +12,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { aggregatesApi } from "@/api/routes/aggregates";
-import { parseEther } from "viem";
+import { formatEther } from "viem";
 import type { Category as CategoryDetail } from "@/types/interfaces/Category";
 import type { PayNote } from "@/types/interfaces/PayNote";
 
@@ -20,10 +20,11 @@ interface PublicTransactionRow {
   hash: string;
   from: string;
   to: string;
-  status: string;
-  value: string;
+  status: PayNote["status"];
+  usd: string;
+  eth: string;
   network: string;
-  timestamp: string;
+  ts: string;
   category: string;
 }
 
@@ -57,22 +58,15 @@ const CATEGORY_COLOR_MAP: Record<
   [TransactionCategory.Customer]: { color: "#6EE7B7", icon: "🤝" },
 };
 
-const NETWORK_CHAIN_ID_MAP: Record<string, number> = {
-  "Optimism Mainnet": 10,
-  "Optimism Sepolia": 11155420,
-  "Base Mainnet": 8453,
-  "Base Sepolia": 84532,
-};
-
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-function toWeiString(valueEth: string) {
+const weiToEthNumber = (valueWei: string) => {
   try {
-    return parseEther(valueEth).toString();
+    return Number(formatEther(BigInt(valueWei)));
   } catch {
-    return "0";
+    return 0;
   }
-}
+};
 
 export default observer(function Landing() {
   const { authenticated, ready, login } = usePrivy();
@@ -94,12 +88,12 @@ export default observer(function Landing() {
 
     const aggregate = filteredItems.reduce((acc, item) => {
       const next = { ...acc };
-      const usd = Number(item.valueUsd);
-      const eth = Number(item.valueEth);
+      const usd = Number(item.fiatValueUsd ?? 0);
+      const eth = weiToEthNumber(item.amountWei);
 
       if (!Number.isNaN(usd)) next.totalUsd += usd;
       if (!Number.isNaN(eth)) next.totalEth += eth;
-      if (item.status === "confirmed") next.confirmed += 1;
+      if (item.status === "Settled") next.confirmed += 1;
 
       return next;
     }, base);
@@ -153,8 +147,15 @@ export default observer(function Landing() {
     const counts = new Map<TransactionCategory, number>();
 
     transactions.items.forEach((item) => {
-      if (item.category === TransactionCategory.All) return;
-      counts.set(item.category, (counts.get(item.category) || 0) + 1);
+      const categoryName = item.categories?.[0]?.name as
+        | TransactionCategory
+        | undefined;
+      if (
+        !categoryName ||
+        categoryName === TransactionCategory.All
+      )
+        return;
+      counts.set(categoryName, (counts.get(categoryName) || 0) + 1);
     });
 
     return Array.from(counts.entries())
@@ -184,23 +185,9 @@ export default observer(function Landing() {
     const cutoff = Date.now() - THIRTY_DAYS_MS;
 
     return transactions.items
-      .filter((item) => new Date(item.ts).getTime() >= cutoff)
-      .sort(
-        (a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()
-      )
-      .slice(0, 5)
-      .map((item) => ({
-        payNoteId: item.hash,
-        txHash: item.hash,
-        chainId: NETWORK_CHAIN_ID_MAP[item.network] ?? 0,
-        senderWalletId: item.from,
-        recipientWalletId: item.to,
-        amountWei: toWeiString(item.valueEth),
-        payReference: item.note,
-        timestamp: Math.floor(new Date(item.ts).getTime() / 1000),
-        status: item.status === "confirmed" ? "Settled" : "Pending",
-        orgId: "demo-org",
-      }));
+      .filter((item) => item.timestamp * 1000 >= cutoff)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 5);
   }, [transactions.items]);
 
   // Fetch public aggregate data for unauthenticated users

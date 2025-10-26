@@ -1,9 +1,10 @@
 "use client";
 
-import { TransactionItem } from "@/stores/transaction.store";
+import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
+import { formatEther } from "viem";
 
 type TransactionTableProps = {
-  items: TransactionItem[];
+  items: PayNoteExpanded[];
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -25,14 +26,35 @@ const truncate = (value: string) => {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 };
 
-const formatUsd = (value: string) => {
+const formatUsd = (value?: string | null) => {
+  if (value == null) return "—";
   const numericValue = Number(value);
   if (Number.isNaN(numericValue)) return `$${value}`;
   return usdFormatter.format(numericValue);
 };
 
-const formatTimestamp = (ts: string) => {
-  return `${dateFormatter.format(new Date(ts))} UTC`;
+const formatTimestamp = (unixSeconds: number) => {
+  return `${dateFormatter.format(new Date(unixSeconds * 1000))} UTC`;
+};
+
+const formatEthAmount = (wei: string) => {
+  try {
+    return formatEther(BigInt(wei));
+  } catch {
+    return "0";
+  }
+};
+
+const getCategoryName = (item: PayNoteExpanded) =>
+  item.categories?.[0]?.name ?? "Uncategorized";
+
+const getNetworkName = (item: PayNoteExpanded) =>
+  item.network?.name ?? `Chain ${item.chainId}`;
+
+const getStatusTone = (status: PayNoteExpanded["status"]) => {
+  if (status === "Settled") return "text-success";
+  if (status === "Pending") return "text-warning";
+  return "text-destructive";
 };
 
 export function TransactionTable({ items }: TransactionTableProps) {
@@ -64,52 +86,46 @@ export function TransactionTable({ items }: TransactionTableProps) {
         <tbody>
           {items.map((item) => (
             <tr
-              key={item.hash}
+              key={item.payNoteId}
               className="border-t border-border/60 odd:bg-muted/10"
             >
               <td className="py-4 pl-4 pr-4 align-top font-mono text-xs text-muted-foreground">
-                {truncate(item.hash)}
+                {truncate(item.txHash)}
               </td>
               <td className="py-4 pr-4 align-top font-mono text-xs">
-                {truncate(item.from)}
+                {truncate(item.senderWalletId)}
               </td>
               <td className="py-4 pr-4 align-top font-mono text-xs">
-                {truncate(item.to)}
+                {truncate(item.recipientWalletId)}
               </td>
               <td className="py-4 pr-4 align-top">
                 <div className="font-semibold text-foreground">
-                  {item.valueEth} ETH
+                  {formatEthAmount(item.amountWei)} ETH
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {formatUsd(item.valueUsd)}
+                  {formatUsd(item.fiatValueUsd)}
                 </div>
               </td>
               <td className="py-4 pr-4 align-top text-xs">
                 <span className="inline-flex rounded-full bg-accent px-2 py-0.5 font-semibold text-accent-foreground">
-                  {item.category}
+                  {getCategoryName(item)}
                 </span>
               </td>
               <td className="py-4 pr-4 align-top text-xs">
                 <div className="font-medium text-foreground">
-                  {item.network}
+                  {getNetworkName(item)}
                 </div>
                 <div className="text-muted-foreground">
-                  {formatTimestamp(item.ts)}
+                  {formatTimestamp(item.timestamp)}
                 </div>
               </td>
               <td className="py-4 pr-4 align-top text-xs font-semibold">
-                <span
-                  className={
-                    item.status === "confirmed"
-                      ? "text-success"
-                      : "text-warning"
-                  }
-                >
+                <span className={getStatusTone(item.status)}>
                   {item.status}
                 </span>
               </td>
               <td className="py-4 pr-4 align-top text-xs text-muted-foreground">
-                {item.note}
+                {item.payReference ?? "—"}
               </td>
             </tr>
           ))}

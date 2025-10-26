@@ -17,14 +17,10 @@ import type { UUID } from "@/types/primitives/UUID";
 interface OrganizationContextValue {
   currentOrg: Organization | null;
   setCurrentOrg: (org: Organization | null) => void;
-
   currentAccount: Account | null;
-
   organizations: Organization[];
-
   isLoading: boolean;
   error: string | null;
-
   isOwner: () => boolean;
   isAdmin: () => boolean;
   canManageMembers: () => boolean;
@@ -54,7 +50,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         setCurrentOrg(org);
 
         const accountsResponse = await api.organizations.listAccounts(orgId);
-        // Ensure accounts is an array
         const accounts = Array.isArray(accountsResponse)
           ? accountsResponse
           : [];
@@ -62,9 +57,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           (acc) => acc.email === user?.email?.address
         );
         setCurrentAccount(userAccount || null);
-
-        // Save to localStorage, in lieu of database persistence
-        localStorage.setItem("currentOrgId", orgId);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to switch organization"
@@ -86,20 +78,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true);
         setError(null);
-
-        // Fetch all orgs the user belongs to
         const orgsResponse = await api.organizations.list();
 
-        // Ensure we have an array
         const organisations = Array.isArray(orgsResponse) ? orgsResponse : [];
         setOrganizations(organisations);
 
-        // Set first org as current (or retrieve from localStorage)
-        const savedOrgId = localStorage.getItem("currentOrgId");
-        const initialOrg =
-          organisations.find((o) => o.orgId === savedOrgId) ||
-          organisations[0] ||
-          null;
+        const initialOrg = organisations[0] || null;
 
         if (initialOrg) {
           await switchOrganization(initialOrg.orgId);
@@ -117,7 +101,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     fetchOrganizations();
   }, [authenticated, user, switchOrganization]);
 
-  // Refresh organizations list
   const refreshOrganizations = useCallback(async () => {
     if (!authenticated || !user) return;
 
@@ -134,7 +117,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }
   }, [authenticated, user]);
 
-  // Permission helpers
   const isOwner = () => currentAccount?.role === "Owner";
   const isAdmin = () =>
     currentAccount?.role === "Owner" || currentAccount?.role === "Admin";

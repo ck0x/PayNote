@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(privyPayload.claims.userId);
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -36,7 +36,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all organizations the user belongs to
-    const organizations = listOrganizationsForAccount(currentAccount.accountId);
+    const organizations = await listOrganizationsForAccount(
+      currentAccount.accountId
+    );
 
     return NextResponse.json(organizations);
   } catch (error) {

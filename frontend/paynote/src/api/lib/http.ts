@@ -7,6 +7,18 @@ import type { ProblemDetail } from "@/types/interfaces/ProblemDetail";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
+ * Token provider function
+ */
+let tokenProvider: (() => Promise<string | null>) | null = null;
+
+/**
+ * Set the token provider (should be called during app initialization)
+ */
+export function setTokenProvider(provider: () => Promise<string | null>) {
+  tokenProvider = provider;
+}
+
+/**
  * HTTP client options
  */
 interface RequestOptions extends RequestInit {
@@ -24,19 +36,15 @@ function buildUrl(path: string, params?: Record<string, unknown>): string {
     ? `${window.location.origin}${API_BASE_URL}`
     : API_BASE_URL;
 
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
 
-  const fullPath = baseUrl.startsWith("http")
-    ? new URL(normalizedPath, baseUrl).toString()
-    : `${baseUrl}${normalizedPath}`;
+  // Properly construct the full URL
+  const fullUrl = baseUrl.endsWith("/")
+    ? `${baseUrl}${normalizedPath}`
+    : `${baseUrl}/${normalizedPath}`;
 
   if (params) {
-    const url = new URL(
-      fullPath,
-      typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000"
-    );
+    const url = new URL(fullUrl);
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
@@ -45,7 +53,7 @@ function buildUrl(path: string, params?: Record<string, unknown>): string {
     return url.toString();
   }
 
-  return fullPath;
+  return fullUrl;
 }
 
 /**
@@ -108,11 +116,25 @@ async function request<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
+    // Get Privy access token if available (client-side only)
+    let authHeader: Record<string, string> = {};
+    if (typeof window !== "undefined" && tokenProvider) {
+      try {
+        const token = await tokenProvider();
+        if (token) {
+          authHeader = { Authorization: `Bearer ${token}` };
+        }
+      } catch (error) {
+        console.warn("Failed to get access token:", error);
+      }
+    }
+
     const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
+        ...authHeader,
         ...fetchOptions.headers,
       },
     });

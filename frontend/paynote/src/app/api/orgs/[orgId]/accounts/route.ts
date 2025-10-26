@@ -26,10 +26,10 @@ interface CreateAccountRequest {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  context: { params: Promise<{ orgId: string }> }
 ) {
   try {
-    const { orgId } = params;
+    const { orgId } = await context.params;
 
     // Authenticate user
     const token = extractBearerToken(request);
@@ -45,7 +45,9 @@ export async function GET(
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -55,7 +57,7 @@ export async function GET(
     }
 
     // Verify organization exists
-    const organization = findOrganizationById(orgId as UUID);
+    const organization = await findOrganizationById(orgId as UUID);
     if (!organization) {
       return NextResponse.json(
         createProblemDetail(404, "Not Found", "Organization not found"),
@@ -76,7 +78,7 @@ export async function GET(
     }
 
     // Get all accounts in the organization
-    const accounts = listAccountsForOrganization(orgId as UUID);
+    const accounts = await listAccountsForOrganization(orgId as UUID);
 
     return NextResponse.json(accounts);
   } catch (error) {
@@ -98,10 +100,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  context: { params: Promise<{ orgId: string }> }
 ) {
   try {
-    const { orgId } = params;
+    const { orgId } = await context.params;
     const body: CreateAccountRequest = await request.json();
 
     // Validate request body
@@ -126,7 +128,9 @@ export async function POST(
     }
 
     const privyPayload = await verifyPrivyToken(token);
-    const currentAccount = findAccountByPrivyId(privyPayload.claims.userId);
+    const currentAccount = await findAccountByPrivyId(
+      privyPayload.claims.userId
+    );
 
     if (!currentAccount) {
       return NextResponse.json(
@@ -136,7 +140,7 @@ export async function POST(
     }
 
     // Verify organization exists
-    const organization = findOrganizationById(orgId as UUID);
+    const organization = await findOrganizationById(orgId as UUID);
     if (!organization) {
       return NextResponse.json(
         createProblemDetail(404, "Not Found", "Organization not found"),
@@ -168,7 +172,7 @@ export async function POST(
     }
 
     // Check if account with this email already exists in the org
-    const existingAccounts = listAccountsForOrganization(orgId as UUID);
+    const existingAccounts = await listAccountsForOrganization(orgId as UUID);
     const emailExists = existingAccounts.some(
       (acc: Account) => acc.email === body.email
     );
@@ -196,7 +200,7 @@ export async function POST(
 
     // Save account with a placeholder Privy ID (in real scenario, this would be from invitation flow)
     const placeholderPrivyId = `pending_${newAccount.accountId}`;
-    saveAccount(newAccount, placeholderPrivyId);
+    await saveAccount(newAccount, placeholderPrivyId);
 
     // TODO: Send invitation email to user
 

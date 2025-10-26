@@ -1,10 +1,10 @@
-import type { Bytes32 } from '../primitives/Bytes32';
-import type { TxHash } from '../primitives/TxHash';
-import type { ChainId } from '../primitives/ChainId';
-import type { UUID } from '../primitives/UUID';
-import type { Wei } from '../primitives/Wei';
-import type { UnixTime } from '../primitives/UnixTime';
-import type { Status } from '../enums/Status';
+import type { Bytes32 } from "../primitives/Bytes32";
+import type { TxHash } from "../primitives/TxHash";
+import type { ChainId } from "../primitives/ChainId";
+import type { UUID } from "../primitives/UUID";
+import type { Wei } from "../primitives/Wei";
+import type { UnixTime } from "../primitives/UnixTime";
+import type { Status } from "../enums/Status";
 
 /** PayNote (atomic transaction + reference) */
 export type PayNote = {
@@ -14,8 +14,9 @@ export type PayNote = {
   senderWalletId: UUID;
   recipientWalletId: UUID;
   amountWei: Wei;
-  payReference: string;
+  payReference?: string | null;
+  fiatValueUsd?: string | null;
   timestamp: UnixTime;
   status: Status;
   orgId?: UUID | null;
-}
+};

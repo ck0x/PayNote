@@ -1,26 +1,15 @@
 import { makeAutoObservable, flow } from "mobx";
 import { Category } from "./types/Category";
-import { exampleTransactions } from "@/tests/example-data/transactions";
-
-export type TransactionItem = {
-  hash: string;
-  from: string;
-  to: string;
-  valueEth: string;
-  valueUsd: string;
-  ts: string;
-  status: "confirmed" | "pending";
-  network: string;
-  category: Category;
-  note: string;
-};
+import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
+import type { Category as CategoryDetail } from "@/types/interfaces/Category";
+import { examplePayNotes } from "@/tests/example-data/transactions";
 
 export class TransactionStore {
   loading = false;
   error: string | null = null;
   categoryFilter: Category = Category.All;
   search = "";
-  items: TransactionItem[] = exampleTransactions;
+  items: PayNoteExpanded[] = examplePayNotes;
 
   constructor() {
     makeAutoObservable(this);
@@ -35,8 +24,19 @@ export class TransactionStore {
   }
 
   setItemCategory(hash: string, category: Category) {
-    const tx = this.items.find((t) => t.hash === hash);
-    if (tx) tx.category = category;
+    const tx = this.items.find((t) => t.txHash === hash);
+    if (!tx) return;
+
+    const nextCategory: CategoryDetail = {
+      categoryId: tx.categories?.[0]?.categoryId ?? `local-${category}`,
+      orgId: tx.orgId ?? "demo-org",
+      name: category,
+      color: tx.categories?.[0]?.color ?? "#A5B4FC",
+      icon: tx.categories?.[0]?.icon ?? "tag",
+      visibility: tx.categories?.[0]?.visibility ?? "Private",
+    };
+
+    tx.categories = [nextCategory];
   }
 
   get filteredItems() {
@@ -45,14 +45,14 @@ export class TransactionStore {
     return this.items.filter((item) => {
       const matchesCategory =
         this.categoryFilter === Category.All ||
-        item.category === this.categoryFilter;
+        item.categories?.some((cat) => cat.name === this.categoryFilter);
 
       const matchesSearch =
         !normalizedSearch ||
-        item.hash.toLowerCase().includes(normalizedSearch) ||
-        item.from.toLowerCase().includes(normalizedSearch) ||
-        item.to.toLowerCase().includes(normalizedSearch) ||
-        item.note.toLowerCase().includes(normalizedSearch);
+        item.txHash.toLowerCase().includes(normalizedSearch) ||
+        item.senderWalletId.toLowerCase().includes(normalizedSearch) ||
+        item.recipientWalletId.toLowerCase().includes(normalizedSearch) ||
+        (item.payReference ?? "").toLowerCase().includes(normalizedSearch);
 
       return matchesCategory && matchesSearch;
     });
@@ -63,7 +63,7 @@ export class TransactionStore {
     this.error = null;
     try {
       // TODO - ENVIO REPLACE placeholder until Envio client wired
-      this.items = exampleTransactions;
+      this.items = examplePayNotes;
     } catch (e: unknown) {
       this.error = e instanceof Error ? e.message : "Failed";
     } finally {
