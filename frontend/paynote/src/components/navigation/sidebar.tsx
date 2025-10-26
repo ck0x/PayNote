@@ -68,8 +68,8 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                   <Image
                     src="/primary-logo-default.svg"
                     alt="PayNote"
-                    width={36}
-                    height={12}
+                    width={48}
+                    height={48}
                     className="mr-2 block"
                   />
                   <span className="font-brand">PayNote</span>
