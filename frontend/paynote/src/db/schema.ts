@@ -36,7 +36,7 @@ export const accounts = pgTable(
     accountId: uuid("account_id").primaryKey().defaultRandom(),
     orgId: uuid("org_id").notNull(),
     privyUserId: text("privy_user_id").notNull(),
-    email: text("email").notNull(),
+    email: text("email"), // Nullable for wallet-only accounts
     displayName: text("display_name").notNull(),
     role: roleEnum("role").notNull().default("Owner"),
     defaultWalletId: uuid("default_wallet_id"),

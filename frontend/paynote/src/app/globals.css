@@ -50,6 +50,12 @@
   --color-brand-700: hsl(var(--brand-700));
   --color-brand-800: hsl(var(--brand-800));
   --color-brand-900: hsl(var(--brand-900));
+
+  --color-pigment-green: hsl(var(--pigment-green));
+  --color-tan: hsl(var(--tan));
+  --color-rich-black: hsl(var(--rich-black));
+  --color-moonstone: hsl(var(--moonstone));
+  --color-xanthous: hsl(var(--xanthous));
 }
 
 /* Light theme */
@@ -62,20 +68,27 @@
   --card-foreground: 210 10% 12%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 210 10% 12%;
+  --card-foreground: 210 10% 12%;
 
-  /* Brand: #00BF63 translated into HSL and a tint scale */
-  --brand: 152 100% 38%;
-  --brand-50: 150 80% 96%;
-  --brand-100: 151 78% 90%;
-  --brand-200: 151 72% 80%;
-  --brand-300: 151 66% 65%;
-  --brand-400: 151 75% 50%;
-  --brand-500: 152 100% 38%; /* ~ #00BF63 */
-  --brand-600: 152 100% 32%;
-  --brand-700: 152 100% 24%;
-  --brand-800: 152 100% 18%;
-  --brand-900: 152 100% 12%;
+  /* Brand: #00b456 (pigment-green) translated into HSL and a tint scale */
+  --brand: 149 100% 35%;
+  --brand-50: 148 80% 95%;
+  --brand-100: 148 75% 88%;
+  --brand-200: 149 70% 76%;
+  --brand-300: 149 68% 61%;
+  --brand-400: 149 80% 48%;
+  --brand-500: 149 100% 35%; /* ~ #00b456 (pigment-green) */
+  --brand-600: 149 100% 30%;
+  --brand-700: 149 100% 23%;
+  --brand-800: 149 100% 17%;
+  --brand-900: 149 100% 11%;
+
+  /* Additional theme colors */
+  --pigment-green: 149 100% 35%; /* #00b456 */
+  --tan: 31 51% 71%; /* #dbb68f */
+  --rich-black: 207 95% 8%; /* #011627 */
+  --moonstone: 188 92% 39%; /* #08a4bd */
+  --xanthous: 40 95% 61%; /* #fabc3c */
 
   --primary: var(--brand-500);
   --primary-foreground: 0 0% 100%;
@@ -120,11 +133,18 @@
   --brand-200: 153 100% 17%;
   --brand-300: 152 100% 25%;
   --brand-400: 152 100% 33%;
-  --brand-500: 152 100% 42%;
-  --brand-600: 152 100% 50%;
-  --brand-700: 152 100% 60%;
-  --brand-800: 152 100% 70%;
-  --brand-900: 152 100% 82%;
+  --brand-500: 149 100% 40%; /* pigment-green adjusted for dark mode */
+  --brand-600: 149 100% 48%;
+  --brand-700: 149 100% 58%;
+  --brand-800: 149 100% 68%;
+  --brand-900: 149 100% 80%;
+
+  /* Additional theme colors (dark mode) */
+  --pigment-green: 149 100% 40%; /* brightened for dark bg */
+  --tan: 31 51% 75%; /* lightened for contrast */
+  --rich-black: 207 40% 15%; /* adjusted to work on dark bg */
+  --moonstone: 188 92% 50%; /* brightened */
+  --xanthous: 40 95% 65%; /* brightened */
 
   --primary: var(--brand-500);
   --primary-foreground: 210 12% 8%;

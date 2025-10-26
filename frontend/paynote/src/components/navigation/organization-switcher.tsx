@@ -109,12 +109,9 @@ export default function OrganizationSwitcher() {
         <span className="text-sm font-semibold text-foreground">
           {currentOrg?.name ?? "Select organization"}
         </span>
-        <span className="text-xs text-muted-foreground">
-          {currentOrg?.slug ?? "Choose an organization"}
-        </span>
       </div>
     );
-  }, [fetchState, organizations.length, currentOrg?.name, currentOrg?.slug]);
+  }, [fetchState, organizations.length, currentOrg?.name]);
 
   // If not authenticated, show sign-in button
   if (!authenticated) {

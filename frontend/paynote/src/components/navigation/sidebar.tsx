@@ -55,14 +55,14 @@ export default function Sidebar({ children }: { children: ReactNode }) {
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_1fr]">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 border-r border-border/60 bg-card/95 shadow-card transition-transform duration-300 backdrop-blur lg:static lg:block",
+            "fixed inset-y-0 left-0 z-50 w-64 border-r border-border/60 bg-card/95 shadow-card transition-transform duration-300 backdrop-blur lg:sticky lg:top-0 lg:h-screen",
             isShowSidebar
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0"
           )}
         >
-          <div className="flex h-full flex-col">
-            <div className="border-b border-border/60 px-4 py-4">
+          <div className="flex h-screen flex-col">
+            <div className="flex-shrink-0 border-b border-border/60 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
                 <Link
                   href="/"
@@ -92,7 +92,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 space-y-6 overflow-y-auto p-4">
+            <nav className="flex-1 space-y-6 overflow-y-auto p-4 min-h-0">
               <div className="space-y-1">
                 {overviewLinks.map((link) => (
                   <SidebarNavItem
@@ -143,7 +143,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
             </nav>
 
             {/* Bottom section */}
-            <div className="border-t p-4">
+            <div className="flex-shrink-0 border-t p-4">
               <SidebarNavItem href="/settings" icon={Settings}>
                 Settings
               </SidebarNavItem>

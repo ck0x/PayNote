@@ -15,6 +15,13 @@
       "when": 1761454582926,
       "tag": "0001_ordinary_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761470995456,
+      "tag": "0002_chief_iron_lad",
+      "breakpoints": true
     }
   ]
 }
