@@ -236,12 +236,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const walletAddress = user.wallet?.address;
         const isWalletAuth = !email && walletAddress;
 
-        await registerOrLogin({
-          privyUserId: user.id,
-          email,
-          walletAddress: isWalletAuth ? walletAddress : undefined,
-          authMethod: isWalletAuth ? "wallet" : "email",
-        });
+        try {
+          await registerOrLogin({
+            privyUserId: user.id,
+            email,
+            walletAddress: isWalletAuth ? walletAddress : undefined,
+            authMethod: isWalletAuth ? "wallet" : "email",
+          });
+        } catch (registerError) {
+          console.error("Registration failed, retrying fetch:", registerError);
+
+          const retryResponse = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (retryResponse.ok) {
+            const retryBody = (await retryResponse
+              .json()
+              .catch(() => null)) as unknown;
+
+            if (hasAccountPayload(retryBody)) {
+              type MeApiResponse = {
+                account: Account;
+                organizations?: Organization[];
+                wallets?: Wallet[];
+              };
+
+              const mePayload = retryBody as MeApiResponse;
+              const organizations = mePayload.organizations || [];
+              const wallets = mePayload.wallets || [];
+              const storedOrgId = localStorage.getItem("selectedOrgId");
+              const selectedOrgId =
+                storedOrgId || organizations[0]?.orgId || null;
+
+              setState({
+                account: mePayload.account,
+                organizations,
+                selectedOrgId,
+                wallets,
+                isLoading: false,
+                error: null,
+              });
+              return;
+            }
+          }
+          throw registerError;
+        }
         return;
       }
 

@@ -50,12 +50,12 @@ export function AccountInfo() {
     return null;
   }
 
-  const initials = getInitials(account.displayName || account.email);
+  const initials = getInitials(account.displayName || account.email || "User");
 
   const accountDetails = [
     { label: "Account ID", value: account.accountId },
     { label: "Organization ID", value: account.orgId },
-    { label: "Email", value: account.email },
+    { label: "Email", value: account.email || "Not provided" },
     { label: "Role", value: formatRole(account.role) },
     {
       label: "Default Wallet",
@@ -72,7 +72,9 @@ export function AccountInfo() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to log out. Try again.";
+        error instanceof Error
+          ? error.message
+          : "Failed to log out. Try again.";
       toast({
         title: "Logout failed",
         description: message,
@@ -100,7 +102,9 @@ export function AccountInfo() {
             <span className="text-sm font-semibold leading-tight text-foreground">
               {account.displayName || "Unnamed account"}
             </span>
-            <span className="text-xs text-muted-foreground">{account.email}</span>
+            <span className="text-xs text-muted-foreground">
+              {account.email || "Wallet-only account"}
+            </span>
           </span>
           <ChevronsUpDown className="ml-1 size-4 text-muted-foreground" />
         </button>
@@ -117,7 +121,9 @@ export function AccountInfo() {
           <p className="text-sm font-semibold text-foreground">
             {account.displayName || "Unnamed account"}
           </p>
-          <p className="text-xs text-muted-foreground">{account.email}</p>
+          <p className="text-xs text-muted-foreground">
+            {account.email || "Wallet-only account"}
+          </p>
           <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5 text-xs font-medium text-foreground">
             <Shield className="size-3.5 text-muted-foreground" />
             {formatRole(account.role)}
@@ -157,7 +163,8 @@ export function AccountInfo() {
         </DropdownMenuGroup>
         <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
           <p>
-            Need to update your wallets? Visit account settings to manage keys and defaults.
+            Need to update your wallets? Visit account settings to manage keys
+            and defaults.
           </p>
         </div>
       </DropdownMenuContent>

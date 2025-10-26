@@ -2,9 +2,11 @@
 
 import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
 import { formatEther } from "viem";
+import { Button } from "@/components/ui/button";
 
 type TransactionTableProps = {
   items: PayNoteExpanded[];
+  onEditReference?: (note: PayNoteExpanded) => void;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -27,7 +29,7 @@ const truncate = (value: string) => {
 };
 
 const formatUsd = (value?: string | null) => {
-  if (value == null) return "—";
+  if (value == null) return "--";
   const numericValue = Number(value);
   if (Number.isNaN(numericValue)) return `$${value}`;
   return usdFormatter.format(numericValue);
@@ -57,7 +59,12 @@ const getStatusTone = (status: PayNoteExpanded["status"]) => {
   return "text-destructive";
 };
 
-export function TransactionTable({ items }: TransactionTableProps) {
+export function TransactionTable({
+  items,
+  onEditReference,
+}: TransactionTableProps) {
+  const allowReferenceActions = typeof onEditReference === "function";
+
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
@@ -125,7 +132,22 @@ export function TransactionTable({ items }: TransactionTableProps) {
                 </span>
               </td>
               <td className="py-4 pr-4 align-top text-xs text-muted-foreground">
-                {item.payReference ?? "—"}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="break-words text-left">
+                    {item.payReference?.trim() ? item.payReference : "--"}
+                  </span>
+                  {allowReferenceActions ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => onEditReference?.(item)}
+                    >
+                      {item.payReference?.trim() ? "Edit" : "Add"}
+                    </Button>
+                  ) : null}
+                </div>
               </td>
             </tr>
           ))}

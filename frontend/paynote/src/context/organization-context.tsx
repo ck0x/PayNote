@@ -13,6 +13,7 @@ import { api } from "@/api";
 import type { Organization } from "@/types/interfaces/Organization";
 import type { Account } from "@/types/interfaces/Account";
 import type { UUID } from "@/types/primitives/UUID";
+import { useAuth } from "./auth-context";
 
 interface OrganizationContextValue {
   currentOrg: Organization | null;
@@ -35,6 +36,7 @@ const OrganizationContext = createContext<OrganizationContextValue | undefined>(
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { authenticated, user } = usePrivy();
+  const { account: authAccount, isLoading: authLoading } = useAuth();
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -69,7 +71,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   // Fetch organizations and set initial org
   useEffect(() => {
-    if (!authenticated || !user) {
+    if (!authenticated || !user || !authAccount || authLoading) {
       setIsLoading(false);
       return;
     }
@@ -99,10 +101,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }
 
     fetchOrganizations();
-  }, [authenticated, user, switchOrganization]);
+  }, [authenticated, user, authAccount, authLoading, switchOrganization]);
 
   const refreshOrganizations = useCallback(async () => {
-    if (!authenticated || !user) return;
+    if (!authenticated || !user || !authAccount) return;
 
     try {
       setError(null);
@@ -115,7 +117,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       );
       console.error("Failed to refresh organizations:", err);
     }
-  }, [authenticated, user]);
+  }, [authenticated, user, authAccount]);
 
   const isOwner = () => currentAccount?.role === "Owner";
   const isAdmin = () =>
