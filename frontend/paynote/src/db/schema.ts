@@ -128,6 +128,56 @@ export const payNotes = pgTable(
   })
 );
 
+export const categories = pgTable(
+  "categories",
+  {
+    categoryId: uuid("category_id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.orgId),
+    name: text("name").notNull(),
+    color: text("color").notNull(),
+    icon: text("icon"),
+    visibility: text("visibility").notNull().default("private"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    orgNameIdx: uniqueIndex("categories_org_name_unique").on(
+      table.orgId,
+      table.name
+    ),
+  })
+);
+
+export const payNoteCategories = pgTable(
+  "pay_note_categories",
+  {
+    payNoteCategoryId: uuid("pay_note_category_id")
+      .primaryKey()
+      .defaultRandom(),
+    payNoteId: text("pay_note_id")
+      .notNull()
+      .references(() => payNotes.payNoteId),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.categoryId),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    payNoteCategoryIdx: uniqueIndex(
+      "pay_note_categories_pay_note_category_unique"
+    ).on(table.payNoteId, table.categoryId),
+  })
+);
+
 export type AccountRow = typeof accounts.$inferSelect;
 export type InsertAccountRow = typeof accounts.$inferInsert;
 export type OrganizationRow = typeof organizations.$inferSelect;
@@ -138,3 +188,7 @@ export type OrganizationMembershipRow =
   typeof organizationMemberships.$inferSelect;
 export type PayNoteRow = typeof payNotes.$inferSelect;
 export type InsertPayNoteRow = typeof payNotes.$inferInsert;
+export type CategoryRow = typeof categories.$inferSelect;
+export type InsertCategoryRow = typeof categories.$inferInsert;
+export type PayNoteCategoryRow = typeof payNoteCategories.$inferSelect;
+export type InsertPayNoteCategoryRow = typeof payNoteCategories.$inferInsert;

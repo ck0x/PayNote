@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/config/db";
-import { payNotes } from "@/db/schema";
+import { payNotes, payNoteCategories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createProblemDetail } from "../../auth/_lib/utils";
 import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
@@ -61,7 +61,7 @@ export async function GET(
 
 /**
  * PATCH /api/paynotes/[payNoteId]
- * Update payment reference
+ * Update payment reference and/or category
  */
 export async function PATCH(
   request: NextRequest,
@@ -70,28 +70,57 @@ export async function PATCH(
   try {
     const { payNoteId } = await params;
     const body = await request.json();
-    const { payReference } = body;
+    const { payReference, categoryId } = body;
 
-    // Validate that payReference exists in body
-    if (!("payReference" in body)) {
+    // Validate that at least one field is being updated
+    if (!("payReference" in body) && !("categoryId" in body)) {
       return NextResponse.json(
         createProblemDetail(
           400,
           "Bad Request",
-          "payReference field is required"
+          "At least one field (payReference or categoryId) is required"
         ),
         { status: 400 }
       );
     }
 
+    // Update payReference if provided
+    if ("payReference" in body) {
+      await db
+        .update(payNotes)
+        .set({
+          payReference: payReference,
+          updatedAt: new Date(),
+        })
+        .where(eq(payNotes.payNoteId, payNoteId));
+    }
+
+    // Update category if provided
+    if ("categoryId" in body) {
+      if (categoryId === null || categoryId === "") {
+        // Remove all categories for this paynote
+        await db
+          .delete(payNoteCategories)
+          .where(eq(payNoteCategories.payNoteId, payNoteId));
+      } else {
+        // First, remove existing categories
+        await db
+          .delete(payNoteCategories)
+          .where(eq(payNoteCategories.payNoteId, payNoteId));
+
+        // Then add the new category
+        await db.insert(payNoteCategories).values({
+          payNoteId,
+          categoryId,
+        });
+      }
+    }
+
+    // Fetch the updated paynote
     const result = await db
-      .update(payNotes)
-      .set({
-        payReference: payReference,
-        updatedAt: new Date(),
-      })
-      .where(eq(payNotes.payNoteId, payNoteId))
-      .returning();
+      .select()
+      .from(payNotes)
+      .where(eq(payNotes.payNoteId, payNoteId));
 
     if (result.length === 0) {
       return NextResponse.json(

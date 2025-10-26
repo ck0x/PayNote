@@ -11,6 +11,7 @@ import {
   organizations,
   wallets,
   payNotes,
+  categories,
 } from "../src/db/schema";
 
 type DbClient = typeof import("../src/config/db");
@@ -78,6 +79,87 @@ const ACCOUNTS: SeedAccount[] = [
         role: "Admin",
       },
     ],
+  },
+];
+
+type SeedCategory = {
+  orgSlug: string;
+  name: string;
+  color: string;
+  icon: string;
+  visibility: string;
+};
+
+const CATEGORIES: SeedCategory[] = [
+  {
+    orgSlug: "tm-inc",
+    name: "Operations",
+    color: "#3B82F6",
+    icon: "🏢",
+    visibility: "private",
+  },
+  {
+    orgSlug: "tm-inc",
+    name: "Personal",
+    color: "#8B5CF6",
+    icon: "👤",
+    visibility: "private",
+  },
+  {
+    orgSlug: "tm-inc",
+    name: "Payroll",
+    color: "#10B981",
+    icon: "💰",
+    visibility: "private",
+  },
+  {
+    orgSlug: "tm-inc",
+    name: "Customer",
+    color: "#F59E0B",
+    icon: "🤝",
+    visibility: "private",
+  },
+  {
+    orgSlug: "tm-inc",
+    name: "Research & Development",
+    color: "#EF4444",
+    icon: "🔬",
+    visibility: "private",
+  },
+  {
+    orgSlug: "trissyg-industries",
+    name: "Operations",
+    color: "#3B82F6",
+    icon: "🏢",
+    visibility: "private",
+  },
+  {
+    orgSlug: "trissyg-industries",
+    name: "Personal",
+    color: "#8B5CF6",
+    icon: "👤",
+    visibility: "private",
+  },
+  {
+    orgSlug: "trissyg-industries",
+    name: "Payroll",
+    color: "#10B981",
+    icon: "💰",
+    visibility: "private",
+  },
+  {
+    orgSlug: "trissyg-industries",
+    name: "Customer",
+    color: "#F59E0B",
+    icon: "🤝",
+    visibility: "private",
+  },
+  {
+    orgSlug: "trissyg-industries",
+    name: "Research & Development",
+    color: "#EF4444",
+    icon: "🔬",
+    visibility: "private",
   },
 ];
 
@@ -170,6 +252,34 @@ async function upsertMembership(accountId: string, orgId: string, role: Role) {
         organizationMemberships.orgId,
       ],
       set: { role },
+    });
+}
+
+async function upsertCategory(
+  seed: SeedCategory,
+  orgIdBySlug: Map<string, string>
+) {
+  const orgId = orgIdBySlug.get(seed.orgSlug);
+  if (!orgId) {
+    throw new Error(`Unknown org slug "${seed.orgSlug}"`);
+  }
+
+  await db
+    .insert(categories)
+    .values({
+      orgId,
+      name: seed.name,
+      color: seed.color,
+      icon: seed.icon,
+      visibility: seed.visibility,
+    })
+    .onConflictDoUpdate({
+      target: [categories.orgId, categories.name],
+      set: {
+        color: seed.color,
+        icon: seed.icon,
+        visibility: seed.visibility,
+      },
     });
 }
 
@@ -382,6 +492,12 @@ async function main() {
     const inserted = await upsertOrganization(org);
     orgIdBySlug.set(org.slug, inserted.orgId);
     console.log(`✔ Organization ready: ${org.name}`);
+  }
+
+  console.log("\nSeeding Categories...");
+  for (const category of CATEGORIES) {
+    await upsertCategory(category, orgIdBySlug);
+    console.log(`✔ Category ready: ${category.name} (${category.orgSlug})`);
   }
 
   const walletIdByAddress = new Map<string, string>();

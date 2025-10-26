@@ -5,6 +5,7 @@ import Sidebar from "@/components/navigation/sidebar";
 import { SummarySection } from "@/components/dashboard/summary-section";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { PublicTransactionTable } from "@/components/transactions/public-transaction-table";
+import { ReferenceEditorDialog } from "@/components/transactions/reference-editor-dialog";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/stores/provider";
 import { Category as TransactionCategory } from "@/stores/types/Category";
@@ -12,9 +13,12 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { aggregatesApi } from "@/api/routes/aggregates";
+import { paynotesApi } from "@/api/routes/paynotes";
 import { formatEther } from "viem";
 import type { Category as CategoryDetail } from "@/types/interfaces/Category";
 import type { PayNote } from "@/types/interfaces/PayNote";
+import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
+import { useOrganization } from "@/context/organization-context";
 
 interface PublicTransactionRow {
   hash: string;
@@ -58,8 +62,6 @@ const CATEGORY_COLOR_MAP: Record<
   [TransactionCategory.Customer]: { color: "#6EE7B7", icon: "🤝" },
 };
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
 const weiToEthNumber = (valueWei: string) => {
   try {
     return Number(formatEther(BigInt(valueWei)));
@@ -71,13 +73,72 @@ const weiToEthNumber = (valueWei: string) => {
 export default observer(function Landing() {
   const { authenticated, ready, login } = usePrivy();
   const { transactions } = useStore();
-  const filteredItems = transactions.filteredItems;
+  const { currentOrg } = useOrganization();
+
+  const [apiPayNotes, setApiPayNotes] = useState<PayNoteExpanded[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<TransactionCategory>(
+    TransactionCategory.All
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [selectedNote, setSelectedNote] = useState<PayNoteExpanded | null>(
+    null
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [publicData, setPublicData] = useState<{
     rows: PublicTransactionRow[];
     summary: AggregatedSummary;
   } | null>(null);
   const [isLoadingPublic, setIsLoadingPublic] = useState(false);
+
+  // Fetch paynotes and categories when authenticated
+  useEffect(() => {
+    if (!authenticated || !currentOrg) return;
+
+    const fetchData = async () => {
+      setIsLoadingData(true);
+      try {
+        // Fetch paynotes for the current organization
+        const paynotes = await paynotesApi.list({
+          orgId: currentOrg.orgId,
+          limit: 1000,
+        });
+        setApiPayNotes(paynotes);
+      } catch (err) {
+        console.error("Failed to load data:", err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [authenticated, currentOrg]);
+
+  // Use API data when available, otherwise fall back to store
+  const dataSource =
+    authenticated && apiPayNotes.length > 0 ? apiPayNotes : transactions.items;
+
+  // Filter data based on category and search
+  const filteredItems = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return dataSource.filter((item) => {
+      const matchesCategory =
+        categoryFilter === TransactionCategory.All ||
+        item.categories?.some((cat) => cat.name === categoryFilter);
+
+      const matchesSearch =
+        !normalizedSearch ||
+        item.txHash.toLowerCase().includes(normalizedSearch) ||
+        item.senderWalletId.toLowerCase().includes(normalizedSearch) ||
+        item.recipientWalletId.toLowerCase().includes(normalizedSearch) ||
+        (item.payReference ?? "").toLowerCase().includes(normalizedSearch);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [dataSource, categoryFilter, searchQuery]);
 
   const summaries = useMemo(() => {
     const base = {
@@ -116,10 +177,6 @@ export default observer(function Landing() {
         ? "—"
         : `${Math.round((aggregate.confirmed / totalCount) * 100)}%`;
 
-    const isFiltered =
-      transactions.categoryFilter !== TransactionCategory.All ||
-      Boolean(transactions.search.trim());
-
     return [
       {
         label: "Filtered volume",
@@ -131,30 +188,17 @@ export default observer(function Landing() {
         value: confirmationRate,
         helper: `${aggregate.confirmed}/${totalCount || 0} confirmed`,
       },
-      {
-        label: "Active filters",
-        value: isFiltered ? "Focused view" : "All activity",
-        helper: isFiltered
-          ? `${transactions.categoryFilter}${
-              transactions.search ? " + search" : ""
-            }`
-          : "No filters applied",
-      },
     ];
-  }, [filteredItems, transactions.categoryFilter, transactions.search]);
+  }, [filteredItems]);
 
   const topCategories = useMemo<CategoryDetail[]>(() => {
     const counts = new Map<TransactionCategory, number>();
 
-    transactions.items.forEach((item) => {
+    dataSource.forEach((item) => {
       const categoryName = item.categories?.[0]?.name as
         | TransactionCategory
         | undefined;
-      if (
-        !categoryName ||
-        categoryName === TransactionCategory.All
-      )
-        return;
+      if (!categoryName || categoryName === TransactionCategory.All) return;
       counts.set(categoryName, (counts.get(categoryName) || 0) + 1);
     });
 
@@ -162,33 +206,78 @@ export default observer(function Landing() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 4)
       .map(([category, count]) => {
-        const meta =
-          CATEGORY_COLOR_MAP[
-            category as Exclude<TransactionCategory, TransactionCategory.All>
-          ] || {
-            color: "#E5E7EB",
-            icon: "•",
-          };
+        const meta = CATEGORY_COLOR_MAP[
+          category as Exclude<TransactionCategory, TransactionCategory.All>
+        ] || {
+          color: "#E5E7EB",
+          icon: "•",
+        };
 
         return {
           categoryId: `mock-${category}`,
-          orgId: "demo-org",
+          orgId: currentOrg?.orgId ?? "demo-org",
           name: category,
           color: meta.color,
           icon: `${meta.icon} ${count} tx`,
           visibility: "Private",
         };
       });
-  }, [transactions.items]);
+  }, [dataSource, currentOrg]);
 
-  const recentPayNotes = useMemo<PayNote[]>(() => {
-    const cutoff = Date.now() - THIRTY_DAYS_MS;
+  const handleEditReference = (note: PayNoteExpanded) => {
+    setSelectedNote(note);
+    setIsDialogOpen(true);
+  };
 
-    return transactions.items
-      .filter((item) => item.timestamp * 1000 >= cutoff)
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 5);
-  }, [transactions.items]);
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setSelectedNote(null);
+    }
+  };
+
+  const handleReferenceSubmit = async (data: {
+    payReference: string | null;
+    category?: CategoryDetail;
+  }) => {
+    if (!selectedNote) return;
+
+    try {
+      // Update reference and category via API
+      await paynotesApi.updateReference(
+        selectedNote.payNoteId,
+        data.payReference,
+        data.category?.categoryId ?? null
+      );
+
+      // Update local state
+      setApiPayNotes((prevNotes) => {
+        return prevNotes.map((note) => {
+          if (note.payNoteId === selectedNote.payNoteId) {
+            return {
+              ...note,
+              payReference: data.payReference,
+              categories: data.category ? [data.category] : [],
+            };
+          }
+          return note;
+        });
+      });
+
+      // Also update in the store for fallback data (using category name)
+      if (data.category) {
+        transactions.setItemCategory(
+          selectedNote.txHash,
+          data.category.name as TransactionCategory
+        );
+      }
+
+      setIsDialogOpen(false);
+      setSelectedNote(null);
+    } catch (error) {
+      console.error("Failed to update transaction:", error);
+    }
+  };
 
   // Fetch public aggregate data for unauthenticated users
   useEffect(() => {
@@ -299,31 +388,28 @@ export default observer(function Landing() {
       <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pb-10 sm:p-8">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-mint-wash" />
 
-        <SummarySection
-          summaries={summaries}
-          topCategories={topCategories}
-          recentPayNotes={recentPayNotes}
-        />
+        <SummarySection summaries={summaries} topCategories={topCategories} />
 
         <section className="rounded-3xl border border-border/80 bg-card/95 p-6 shadow-card backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="flex flex-1 flex-wrap gap-3">
-              <CategoryFilter />
+              <CategoryFilter
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+              />
               <div className="min-w-[240px] flex-1">
                 <Input
                   placeholder="Search hash, sender, or recipient"
-                  value={transactions.search}
-                  onChange={(event) =>
-                    transactions.setSearch(event.target.value)
-                  }
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                 />
               </div>
             </div>
           </div>
 
-          {transactions.error ? (
-            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-              {transactions.error}
+          {isLoadingData ? (
+            <div className="mt-4 text-sm text-muted-foreground">
+              Loading transactions...
             </div>
           ) : null}
         </section>
@@ -339,12 +425,23 @@ export default observer(function Landing() {
               </p>
             </div>
             <span className="inline-flex items-center rounded-full bg-accent/60 px-3 py-1 text-xs font-semibold text-accent-foreground">
-              Live data mock
+              {authenticated && apiPayNotes.length > 0
+                ? "Live data"
+                : "Demo data"}
             </span>
           </div>
-          <TransactionTable items={filteredItems} />
+          <TransactionTable
+            items={filteredItems}
+            onEditReference={handleEditReference}
+          />
         </section>
       </main>
+      <ReferenceEditorDialog
+        open={isDialogOpen}
+        onOpenChange={handleDialogClose}
+        note={selectedNote}
+        onSubmit={handleReferenceSubmit}
+      />
     </Sidebar>
   );
 });

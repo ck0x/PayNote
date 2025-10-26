@@ -39,11 +39,16 @@ export const paynotesApi = {
     http.get<PayNoteExpanded>(`/paynotes/${payNoteId}`),
 
   /**
-   * Update payment reference
+   * Update payment reference and/or category
    * PATCH /paynotes/{payNoteId}
    */
-  updateReference: (payNoteId: Bytes32, payReference: string | null) =>
+  updateReference: (
+    payNoteId: Bytes32,
+    payReference: string | null,
+    categoryId?: string | null
+  ) =>
     http.patch<PayNoteExpanded>(`/paynotes/${payNoteId}`, {
       payReference,
+      ...(categoryId !== undefined && { categoryId }),
     }),
 };

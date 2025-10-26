@@ -13,6 +13,7 @@ import {
 import { useOrganization } from "@/context/organization-context";
 import { useToast } from "@/components/ui/toast";
 import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
+import type { Category as CategoryDetail } from "@/types/interfaces/Category";
 
 const STATUS_FILTERS = ["All", "Settled", "Pending", "Failed"] as const;
 
@@ -61,19 +62,25 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleReferenceSubmit = async (nextValue: string | null) => {
+  const handleReferenceSubmit = async (data: {
+    payReference: string | null;
+    category?: CategoryDetail;
+  }) => {
     if (!selectedNote) return;
 
     try {
+      // Update the reference and category via API
       await updateReference.mutateAsync({
         payNoteId: selectedNote.payNoteId,
-        payReference: nextValue,
+        payReference: data.payReference,
+        categoryId: data.category?.categoryId ?? null,
       });
+
       toast({
-        title: "Reference saved",
-        description: nextValue
-          ? "Payment reference updated successfully."
-          : "Payment reference removed.",
+        title: "Payment updated",
+        description: data.payReference
+          ? "Reference and category updated successfully."
+          : "Reference removed and category updated.",
       });
       setIsDialogOpen(false);
       setSelectedNote(null);
@@ -81,9 +88,9 @@ export default function TransactionsPage() {
       const message =
         mutationError instanceof Error
           ? mutationError.message
-          : "Failed to update reference.";
+          : "Failed to update payment.";
       toast({
-        title: "Unable to save reference",
+        title: "Unable to save changes",
         description: message,
         variant: "destructive",
       });

@@ -2,9 +2,7 @@
 
 import { DashboardHeaderCard } from "@/components/ui/home/dashboard-header-card";
 import { DashboardKpiCard } from "@/components/ui/home/dashboard-kpi-card";
-import { RecentPayNotesCard } from "@/components/ui/home/recent-paynotes-card";
 import { TopCategoriesCard } from "@/components/ui/home/top-categories-card";
-import type { PayNote } from "@/types/interfaces/PayNote";
 import type { Category } from "@/types/interfaces/Category";
 
 interface SummarySectionProps {
@@ -15,9 +13,7 @@ interface SummarySectionProps {
   }>;
   headerTitle?: string;
   headerDescription?: string;
-  eyebrow?: string;
   topCategories?: Category[];
-  recentPayNotes?: PayNote[];
 }
 
 export function SummarySection({
@@ -25,7 +21,6 @@ export function SummarySection({
   headerTitle = "Transaction Summary",
   headerDescription = "Organization overview and analytics",
   topCategories = [],
-  recentPayNotes = [],
 }: SummarySectionProps) {
   return (
     <section
@@ -49,17 +44,12 @@ export function SummarySection({
               className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white [&_h3]:text-black/70 dark:[&_h3]:text-white/80 [&_p.text-3xl]:text-black dark:[&_p.text-3xl]:text-white dark:[&_p.text-muted-foreground]:text-white/80"
             />
           ))}
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <TopCategoriesCard
-            categories={topCategories}
-            className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white [&_h2]:text-black dark:[&_h2]:text-white dark:[&_p.text-muted-foreground]:text-white/80"
-          />
-          <RecentPayNotesCard
-            payNotes={recentPayNotes}
-            className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white dark:[&_p.text-muted-foreground]:text-white/80"
-          />
+          {topCategories.length > 0 && (
+            <TopCategoriesCard
+              categories={topCategories}
+              className="border-white/20 bg-white/10 text-black backdrop-blur dark:text-white [&_h2]:text-black dark:[&_h2]:text-white dark:[&_p.text-muted-foreground]:text-white/80"
+            />
+          )}
         </div>
       </div>
     </section>

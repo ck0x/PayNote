@@ -1,9 +1,5 @@
 import { useMemo } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api";
 import type { PayNoteExpanded } from "@/types/interfaces/PayNoteExpanded";
 import type { Status } from "@/types/enums/Status";
@@ -64,10 +60,12 @@ export function useUpdatePaynoteReference(filters?: PaynotesFilters) {
     mutationFn: async ({
       payNoteId,
       payReference,
+      categoryId,
     }: {
       payNoteId: Bytes32;
       payReference: string | null;
-    }) => api.paynotes.updateReference(payNoteId, payReference),
+      categoryId?: string | null;
+    }) => api.paynotes.updateReference(payNoteId, payReference, categoryId),
     onSuccess: (updated) => {
       queryClient.setQueryData<PayNoteExpanded[] | undefined>(
         buildQueryKey(filters ?? {}),
