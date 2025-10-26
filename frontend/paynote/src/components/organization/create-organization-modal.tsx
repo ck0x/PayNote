@@ -49,7 +49,6 @@ export function CreateOrganizationModal({
   const [formData, setFormData] = useState<OrganizationCreate>({
     name: "",
     slug: "",
-    billingPlan: "Free",
     primaryCurrency: "USD",
   });
 
@@ -98,7 +97,6 @@ export function CreateOrganizationModal({
       setFormData({
         name: "",
         slug: "",
-        billingPlan: "Free",
         primaryCurrency: "USD",
       });
 
@@ -189,31 +187,6 @@ export function CreateOrganizationModal({
                 <option value="JPY">JPY - Japanese Yen</option>
                 <option value="CAD">CAD - Canadian Dollar</option>
                 <option value="AUD">AUD - Australian Dollar</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="plan">Billing Plan</Label>
-              <select
-                id="plan"
-                value={formData.billingPlan}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    billingPlan: e.target.value as
-                      | "Free"
-                      | "Team"
-                      | "Enterprise",
-                  }))
-                }
-                disabled={isSubmitting}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="Free">Free - Limited features</option>
-                <option value="Team">Team - Up to 10 members</option>
-                <option value="Enterprise">
-                  Enterprise - Unlimited members
-                </option>
               </select>
             </div>
           </div>
