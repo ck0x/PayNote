@@ -1,4 +1,5 @@
 import {
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -8,7 +9,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["Owner", "Admin", "Member", "Viewer"]);
-export const planEnum = pgEnum("plan", ["Free", "Team", "Enterprise"]);
 
 export const organizations = pgTable(
   "organizations",
@@ -95,6 +95,39 @@ export const organizationMemberships = pgTable(
   })
 );
 
+export const payNotes = pgTable(
+  "pay_notes",
+  {
+    payNoteId: text("pay_note_id").primaryKey(),
+    txHash: text("tx_hash").notNull(),
+    chainId: integer("chain_id").notNull(),
+    senderWalletId: uuid("sender_wallet_id")
+      .notNull()
+      .references(() => wallets.walletId),
+    recipientWalletId: uuid("recipient_wallet_id")
+      .notNull()
+      .references(() => wallets.walletId),
+    amountWei: text("amount_wei").notNull(),
+    payReference: text("pay_reference"),
+    fiatValueUsd: text("fiat_value_usd"),
+    timestamp: integer("timestamp").notNull(), // UnixTime
+    status: text("status").notNull().default("Pending"), // "Settled" | "Failed" | "Pending"
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.orgId),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    txHashIdx: uniqueIndex("pay_notes_tx_hash_unique").on(table.txHash),
+  })
+);
+
 export type AccountRow = typeof accounts.$inferSelect;
 export type InsertAccountRow = typeof accounts.$inferInsert;
 export type OrganizationRow = typeof organizations.$inferSelect;
@@ -103,3 +136,5 @@ export type WalletRow = typeof wallets.$inferSelect;
 export type InsertWalletRow = typeof wallets.$inferInsert;
 export type OrganizationMembershipRow =
   typeof organizationMemberships.$inferSelect;
+export type PayNoteRow = typeof payNotes.$inferSelect;
+export type InsertPayNoteRow = typeof payNotes.$inferInsert;
