@@ -4,6 +4,7 @@ import type { UUID } from "@/types/primitives/UUID";
 import type { ChainId } from "@/types/primitives/ChainId";
 import type { Address } from "@/types/primitives/Address";
 import type { Bytes32 } from "@/types/primitives/Bytes32";
+import type { Status } from "@/types/enums/Status";
 
 /**
  * PayNotes API query parameters
@@ -13,6 +14,9 @@ interface PayNotesQueryParams {
   address?: Address;
   categoryId?: UUID;
   orgId?: UUID;
+  status?: Status;
+  search?: string;
+  limit?: number;
 }
 
 /**
@@ -33,4 +37,13 @@ export const paynotesApi = {
    */
   get: (payNoteId: Bytes32) =>
     http.get<PayNoteExpanded>(`/paynotes/${payNoteId}`),
+
+  /**
+   * Update payment reference
+   * PATCH /paynotes/{payNoteId}
+   */
+  updateReference: (payNoteId: Bytes32, payReference: string | null) =>
+    http.patch<PayNoteExpanded>(`/paynotes/${payNoteId}`, {
+      payReference,
+    }),
 };
