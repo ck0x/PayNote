@@ -114,7 +114,7 @@ export default function TransactionsPage() {
 
   return (
     <>
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 pb-10 sm:p-8">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
             {currentOrg.name}

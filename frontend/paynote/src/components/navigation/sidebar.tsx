@@ -29,23 +29,20 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
   const { authenticated } = usePrivy();
 
-  // Overview links - conditional based on auth
   const overviewLinks = authenticated
     ? [
         { href: "/", label: "Home", icon: Home },
         { href: "/transactions", label: "Transactions", icon: Receipt },
-        { href: "/analytics", label: "Analytics", icon: BarChart3 },
+        // { href: "/analytics", label: "Analytics", icon: BarChart3 }, // feature flag!
       ]
     : [{ href: "/", label: "Home", icon: Home }];
 
-  // Workspace links - only shown when authenticated
   const workspaceLinks = [
     { href: "/counterparties", label: "Counterparties", icon: Users },
     { href: "/categories", label: "Categories & Rules", icon: Tag },
     { href: "/send", label: "Send Payment", icon: Send },
   ];
 
-  // Resource links - always shown
   const resourceLinks = [
     { href: "/developer", label: "Developer", icon: Braces },
   ];
@@ -61,8 +58,8 @@ export default function Sidebar({ children }: { children: ReactNode }) {
               : "-translate-x-full lg:translate-x-0"
           )}
         >
-          <div className="flex h-screen flex-col">
-            <div className="flex-shrink-0 border-b border-border/60 px-4 py-4">
+          <div className="flex h-screen flex-col border-r-2 border-xanthous/50 bg-tan">
+            <div className="flex-shrink-0 border-b-2 border-rich-black/60 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
                 <Link
                   href="/"
@@ -71,11 +68,11 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                   <Image
                     src="/primary-logo-default.svg"
                     alt="PayNote"
-                    width={36}
-                    height={12}
+                    width={48}
+                    height={48}
                     className="mr-2 block"
                   />
-                  <span>PayNote</span>
+                  <span className="font-brand">PayNote</span>
                 </Link>
                 <Button
                   variant="ghost"
@@ -87,11 +84,9 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                   <X className="size-5" />
                 </Button>
               </div>
-
               <OrganizationSwitcher />
             </div>
 
-            {/* Navigation */}
             <nav className="flex-1 space-y-6 overflow-y-auto p-4 min-h-0">
               <div className="space-y-1">
                 {overviewLinks.map((link) => (
@@ -107,7 +102,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
               {authenticated && (
                 <div>
-                  <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-sm font-semibold uppercase tracking-wide text-foreground">
                     Workspace
                   </p>
                   <div className="mt-2 space-y-1">
@@ -125,7 +120,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
               )}
 
               <div>
-                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-sm font-semibold uppercase tracking-wide text-foreground">
                   Resources
                 </p>
                 <div className="mt-2 space-y-1">
@@ -141,17 +136,13 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </nav>
-
-            {/* Bottom section */}
-            <div className="flex-shrink-0 border-t p-4">
+            <div className="flex-shrink-0 border-t-2 border-rich-black/60 p-4">
               <SidebarNavItem href="/settings" icon={Settings}>
                 Settings
               </SidebarNavItem>
             </div>
           </div>
         </aside>
-
-        {/* Main content */}
         <main className="flex flex-1 flex-col">
           <Header />
           <div className="flex-1">{children}</div>
