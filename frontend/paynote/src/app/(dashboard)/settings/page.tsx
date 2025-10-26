@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Organization } from "@/types/interfaces/Organization";
+import { useOrganization } from "@/context/organization-context";
 import type { Account } from "@/types/interfaces/Account";
 import type { ContractBinding } from "@/types/interfaces/ContractBinding";
 
@@ -14,14 +14,61 @@ import type { ContractBinding } from "@/types/interfaces/ContractBinding";
  * Entities: Organization, Account, ContractBinding
  */
 export default function SettingsPage() {
+  const { currentOrg, isLoading: orgLoading } = useOrganization();
   const [activeTab, setActiveTab] = useState<
     "general" | "members" | "contracts"
   >("general");
+  const [members, setMembers] = useState<Account[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
-  // TODO: Fetch from API
-  const organization: Organization | undefined = undefined;
-  const members: Account[] = [];
+  // TODO: Fetch contract bindings from API
   const contractBindings: ContractBinding[] = [];
+
+  const fetchMembers = useCallback(async () => {
+    if (!currentOrg) return;
+
+    setIsLoadingMembers(true);
+    try {
+      const response = await fetch(`/api/orgs/${currentOrg.orgId}/accounts`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("privy:token")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMembers(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Failed to fetch members:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching members:", error);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  }, [currentOrg]);
+
+  useEffect(() => {
+    if (activeTab === "members" && currentOrg) {
+      fetchMembers();
+    }
+  }, [activeTab, currentOrg, fetchMembers]);
+
+  if (orgLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading organization...</p>
+      </div>
+    );
+  }
+
+  if (!currentOrg) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">No organization selected</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -36,13 +83,13 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b">
         {[
-          { key: "general", label: "General" },
-          { key: "members", label: "Members" },
-          { key: "contracts", label: "Contracts" },
+          { key: "general" as const, label: "General" },
+          { key: "members" as const, label: "Members" },
+          { key: "contracts" as const, label: "Contracts" },
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key as any)}
+            onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 font-medium border-b-2 transition-colors ${
               activeTab === tab.key
                 ? "border-primary text-primary"
@@ -62,25 +109,22 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Organization Name</label>
-                <Input
-                  defaultValue={organization?.name || ""}
-                  className="mt-1"
-                />
+                <Input defaultValue={currentOrg.name} className="mt-1" />
               </div>
               <div>
                 <label className="text-sm font-medium">Slug</label>
-                <Input
-                  defaultValue={organization?.slug || ""}
-                  className="mt-1"
-                />
+                <Input defaultValue={currentOrg.slug} className="mt-1" />
                 <p className="text-xs text-muted-foreground mt-1">
                   Used in URLs: paynote.app/org/
-                  {organization?.slug || "your-org"}
+                  {currentOrg.slug}
                 </p>
               </div>
               <div>
                 <label className="text-sm font-medium">Primary Currency</label>
-                <select className="w-full px-3 py-2 rounded-md border bg-background mt-1">
+                <select
+                  className="w-full px-3 py-2 rounded-md border bg-background mt-1"
+                  defaultValue={currentOrg.primaryCurrency}
+                >
                   <option value="USD">USD - US Dollar</option>
                   <option value="EUR">EUR - Euro</option>
                   <option value="GBP">GBP - British Pound</option>
@@ -102,7 +146,11 @@ export default function SettingsPage() {
 
           <Card className="p-6">
             <div className="space-y-4">
-              {members.length === 0 ? (
+              {isLoadingMembers ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Loading members...
+                </p>
+              ) : members.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
                   No members yet. Invite team members to collaborate.
                 </p>

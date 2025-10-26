@@ -9,6 +9,7 @@ import {
   verifyPrivyToken,
 } from "../_lib/privy";
 import {
+  findAccountByEmail,
   findAccountByPrivyId,
   findWalletByAddress,
   findWalletById,
@@ -118,7 +119,17 @@ export async function POST(request: NextRequest) {
       body.walletAddress ?? user?.wallet?.address
     );
 
-    const existingAccount = await findAccountByPrivyId(privyUserId);
+    let existingAccount = await findAccountByPrivyId(privyUserId);
+    if (!existingAccount && candidateEmail) {
+      const accountByEmail = await findAccountByEmail(candidateEmail);
+      if (accountByEmail) {
+        existingAccount = accountByEmail;
+        console.log(
+          `Linking existing account ${accountByEmail.accountId} to Privy user ${privyUserId}`
+        );
+      }
+    }
+
     const isNewUser = !existingAccount;
 
     let account: Account;
@@ -132,54 +143,73 @@ export async function POST(request: NextRequest) {
         displayName: candidateDisplayName || existingAccount.displayName,
       };
 
-      const walletAddress = body.walletAddress ?? user?.wallet?.address ?? null;
+      // Get existing wallets for this account
+      const existingWallets = await listWalletsForAccount(
+        updatedAccount.accountId
+      );
 
-      if (walletAddress) {
-        const normalizedAddress = walletAddress.toLowerCase();
-        const globalWallet = await findWalletByAddress(walletAddress);
-
-        if (
-          globalWallet &&
-          globalWallet.ownerAccountId !== updatedAccount.accountId
-        ) {
-          return NextResponse.json(
-            createProblemDetail(
-              409,
-              "Wallet already linked",
-              "The provided wallet address is linked to another PayNote account."
-            ),
-            { status: 409 }
-          );
-        }
-
-        const existingWallets = await listWalletsForAccount(
-          updatedAccount.accountId
+      // Priority 1: Use existing default wallet if it exists
+      if (existingAccount.defaultWalletId) {
+        wallet = await findWalletById(existingAccount.defaultWalletId);
+        updatedAccount.defaultWalletId = existingAccount.defaultWalletId;
+        console.log(
+          `Using existing wallet ${wallet?.walletId} for account ${updatedAccount.accountId}`
         );
-        wallet = existingWallets.find(
-          (entry) => entry.address.toLowerCase() === normalizedAddress
-        );
-
-        if (!wallet) {
-          wallet = {
-            walletId: crypto.randomUUID(),
-            address: walletAddress,
-            ensName: null,
-            label: `${updatedAccount.displayName}'s Wallet`,
-            ownerAccountId: updatedAccount.accountId,
-            createdAt: Math.floor(Date.now() / 1000),
-          };
-          await saveWallet(wallet);
-        }
-
+      }
+      // Priority 2: Use any existing wallet linked to this account
+      else if (existingWallets.length > 0) {
+        wallet = existingWallets[0];
         updatedAccount.defaultWalletId = wallet.walletId;
-      } else if (existingAccount.defaultWalletId) {
-        wallet =
-          (await findWalletById(existingAccount.defaultWalletId)) ?? undefined;
-        updatedAccount.defaultWalletId =
-          wallet?.walletId ?? existingAccount.defaultWalletId;
-      } else {
-        wallet = undefined;
-        updatedAccount.defaultWalletId = null;
+        console.log(
+          `Using existing wallet ${wallet.walletId} for account ${updatedAccount.accountId}`
+        );
+      }
+      // Priority 3: Only if no existing wallet, try to add Privy wallet
+      else {
+        const walletAddress =
+          body.walletAddress ?? user?.wallet?.address ?? null;
+
+        if (walletAddress) {
+          const normalizedAddress = walletAddress.toLowerCase();
+          const globalWallet = await findWalletByAddress(walletAddress);
+
+          // Check if this wallet belongs to a DIFFERENT account
+          if (
+            globalWallet &&
+            globalWallet.ownerAccountId !== updatedAccount.accountId
+          ) {
+            return NextResponse.json(
+              createProblemDetail(
+                409,
+                "Wallet already linked",
+                "The provided wallet address is linked to another PayNote account."
+              ),
+              { status: 409 }
+            );
+          }
+
+          // Wallet either doesn't exist or already belongs to this account
+          wallet = existingWallets.find(
+            (entry) => entry.address.toLowerCase() === normalizedAddress
+          );
+
+          if (!wallet) {
+            wallet = {
+              walletId: crypto.randomUUID(),
+              address: walletAddress,
+              ensName: null,
+              label: `${updatedAccount.displayName}'s Wallet`,
+              ownerAccountId: updatedAccount.accountId,
+              createdAt: Math.floor(Date.now() / 1000),
+            };
+            await saveWallet(wallet);
+          }
+
+          updatedAccount.defaultWalletId = wallet.walletId;
+        } else {
+          wallet = undefined;
+          updatedAccount.defaultWalletId = null;
+        }
       }
 
       await saveAccount(updatedAccount, privyUserId);
