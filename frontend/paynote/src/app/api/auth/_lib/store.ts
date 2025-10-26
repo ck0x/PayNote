@@ -80,6 +80,10 @@ export async function findAccountByPrivyId(privyUserId: string) {
 }
 
 export async function findAccountByEmail(email: string) {
+  if (!email || !email.trim()) {
+    return undefined;
+  }
+  
   const row = await db.query.accounts.findFirst({
     where: eq(accounts.email, email),
   });
@@ -87,13 +91,15 @@ export async function findAccountByEmail(email: string) {
 }
 
 export async function saveAccount(account: Account, privyUserId: string) {
+  const emailValue = account.email && account.email.trim() ? account.email : null;
+  
   await db
     .insert(accounts)
     .values({
       accountId: account.accountId,
       orgId: account.orgId,
       privyUserId,
-      email: account.email,
+      email: emailValue,
       displayName: account.displayName,
       role: account.role,
       defaultWalletId: account.defaultWalletId ?? null,
@@ -103,7 +109,7 @@ export async function saveAccount(account: Account, privyUserId: string) {
       set: {
         orgId: account.orgId,
         privyUserId,
-        email: account.email,
+        email: emailValue,
         displayName: account.displayName,
         role: account.role,
         defaultWalletId: account.defaultWalletId ?? null,

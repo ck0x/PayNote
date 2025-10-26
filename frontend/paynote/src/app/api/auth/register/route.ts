@@ -46,28 +46,28 @@ const DEFAULT_CURRENCY: Organization["primaryCurrency"] = "USD";
 function resolveEmail(
   inputEmail: string | undefined,
   fallbackEmail: Email | undefined
-) {
+): Email | null {
   if (inputEmail?.length) {
-    return inputEmail;
+    return inputEmail as Email;
   }
 
   if (fallbackEmail?.length) {
     return fallbackEmail;
   }
 
-  return "" as Email;
+  return null;
 }
 
 function resolveDisplayName(
   displayName: string | undefined,
-  email: Email,
+  email: Email | null,
   walletAddress?: string
 ) {
   if (displayName?.length) {
     return displayName;
   }
 
-  if (email.length) {
+  if (email?.length) {
     return email.split("@")[0] ?? "User";
   }
 
@@ -166,8 +166,9 @@ export async function POST(request: NextRequest) {
       }
       // Priority 3: Only if no existing wallet, try to add Privy wallet
       else {
-        const walletAddress =
-          body.walletAddress ?? user?.wallet?.address ?? null;
+        // Only try to link wallet if explicitly provided in the request body
+        // Don't automatically pull from Privy to avoid conflicts with OAuth re-logins
+        const walletAddress = body.walletAddress ?? null;
 
         if (walletAddress) {
           const normalizedAddress = walletAddress.toLowerCase();
